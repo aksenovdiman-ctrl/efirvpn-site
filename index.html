@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; base-uri 'none'; object-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; form-action 'self'"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="referrer" content="no-referrer" />
+    <title>Efir VPN</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#home" aria-label="Efir VPN">
+        <span class="brand-mark"></span>
+        <span>Efir<span>VPN</span></span>
+      </a>
+      <nav class="nav" aria-label="Основная навигация">
+        <a href="#plans">Тарифы</a>
+        <a href="#connect">Подключение</a>
+        <a href="#support">Поддержка</a>
+      </nav>
+      <button class="login-button" type="button" data-open-account data-auth-label>Войти</button>
+    </header>
+
+    <main id="home">
+      <section class="hero">
+        <div class="hero-field" aria-hidden="true">
+          <span class="orbit orbit-1"></span>
+          <span class="orbit orbit-2"></span>
+          <span class="orbit orbit-3"></span>
+        </div>
+
+        <div class="hero-content">
+          <div class="pill">
+            <span></span>
+            5 дней бесплатно
+          </div>
+          <h1>Связь без лишнего шума</h1>
+          <p>
+            Быстрый VPN для телефона и компьютера. Подписка открывается в Happ
+            одной ссылкой, а статус всегда виден в личном кабинете.
+          </p>
+          <div class="hero-actions">
+            <a
+              class="primary-action"
+              href="https://t.me/efirvpn_bot"
+              target="_blank"
+              rel="noopener noreferrer external"
+              referrerpolicy="no-referrer"
+              >Подключить VPN</a
+            >
+            <button class="secondary-action" type="button" data-open-account>
+              Личный кабинет
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="trust-strip" aria-label="Преимущества">
+        <div>
+          <strong>5 дней</strong>
+          <span>пробный период</span>
+        </div>
+        <div>
+          <strong>Happ</strong>
+          <span>быстрый импорт</span>
+        </div>
+        <div>
+          <strong>3 устройства</strong>
+          <span>в базовом тарифе</span>
+        </div>
+        <div>
+          <strong>24/7</strong>
+          <span>статус подписки</span>
+        </div>
+      </section>
+
+      <section id="plans" class="plans-section">
+        <div class="section-heading">
+          <span>Тарифы</span>
+          <h2>Простая подписка без привязки карты</h2>
+          <p>Один ключ для всех серверов, отдельный лимит для резервного LTE-профиля.</p>
+        </div>
+
+        <div class="pricing-list" aria-label="Тарифы">
+          <button class="price-row" type="button" data-plan="1 месяц">
+            <span>1 месяц</span>
+            <small>80 ГБ LTE</small>
+            <strong>299 ₽</strong>
+            <b>→</b>
+          </button>
+          <button class="price-row featured" type="button" data-plan="3 месяца">
+            <span>3 месяца</span>
+            <small>266 ₽/мес</small>
+            <strong>799 ₽</strong>
+            <b>→</b>
+          </button>
+          <button class="price-row" type="button" data-plan="6 месяцев">
+            <span>6 месяцев</span>
+            <small>250 ₽/мес</small>
+            <strong>1499 ₽</strong>
+            <b>→</b>
+          </button>
+          <button class="price-row" type="button" data-plan="12 месяцев">
+            <span>12 месяцев</span>
+            <small>183 ₽/мес</small>
+            <strong>2199 ₽</strong>
+            <b>→</b>
+          </button>
+        </div>
+      </section>
+
+      <section id="connect" class="steps-section">
+        <div class="section-heading">
+          <span>Старт</span>
+          <h2>Подключение за минуту</h2>
+        </div>
+        <div class="steps-grid">
+          <article>
+            <span>01</span>
+            <h3>Откройте бота</h3>
+            <p>Получите пробный доступ и выберите устройство.</p>
+          </article>
+          <article>
+            <span>02</span>
+            <h3>Добавьте ключ</h3>
+            <p>Скопируйте subscription link или откройте его сразу в Happ.</p>
+          </article>
+          <article>
+            <span>03</span>
+            <h3>Включите VPN</h3>
+            <p>Выберите основной или резервный профиль и подключитесь.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="support" class="final-section">
+        <p>Нужна помощь с подключением?</p>
+        <a
+          href="https://t.me/efirvpn_bot"
+          target="_blank"
+          rel="noopener noreferrer external"
+          referrerpolicy="no-referrer"
+          >Написать в Telegram</a
+        >
+      </section>
+    </main>
+
+    <dialog class="auth-dialog" id="authDialog" aria-labelledby="authTitle">
+      <div class="auth-shell">
+        <div class="auth-head">
+          <div>
+            <span>Вход</span>
+            <h2 id="authTitle">Личный кабинет</h2>
+          </div>
+          <button class="close-button" type="button" data-close-auth aria-label="Закрыть">
+            ×
+          </button>
+        </div>
+
+        <div class="auth-methods" role="tablist" aria-label="Способ входа">
+          <button class="auth-method active" type="button" data-auth-method="telegram">
+            Telegram
+          </button>
+          <button class="auth-method" type="button" data-auth-method="email">Email</button>
+        </div>
+
+        <div class="auth-panel active" data-auth-panel="telegram">
+          <p>
+            Войдите через Telegram-бота. Бот подтвердит ваш аккаунт и вернет вас в
+            личный кабинет.
+          </p>
+          <a
+            class="auth-primary"
+            href="https://t.me/efirvpn_bot?start=login"
+            target="_blank"
+            rel="noopener noreferrer external"
+            referrerpolicy="no-referrer"
+            >Открыть Telegram</a
+          >
+          <button class="auth-secondary" type="button" data-demo-telegram-login>
+            Демо-вход через Telegram
+          </button>
+        </div>
+
+        <form class="auth-panel" data-auth-panel="email" data-email-auth novalidate>
+          <label>
+            Email
+            <input
+              type="email"
+              name="email"
+              autocomplete="email"
+              inputmode="email"
+              placeholder="name@example.com"
+              required
+            />
+          </label>
+          <button class="auth-primary" type="submit" data-email-submit>Получить код</button>
+          <div class="code-box" data-code-box hidden>
+            <label>
+              Код из письма
+              <input
+                type="text"
+                name="code"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                maxlength="6"
+                pattern="[0-9]{6}"
+                placeholder="123456"
+              />
+            </label>
+            <button class="auth-secondary" type="button" data-confirm-code>Войти</button>
+          </div>
+          <p class="auth-note" data-auth-message>
+            Мы отправим одноразовый код. Пароль не нужен.
+          </p>
+        </form>
+      </div>
+    </dialog>
+
+    <dialog class="account-dialog" id="accountDialog" aria-labelledby="accountTitle">
+      <div class="account-shell">
+        <aside class="account-sidebar">
+          <div class="account-brand">
+            <span class="brand-mark"></span>
+            <strong>EfirVPN</strong>
+          </div>
+          <button class="account-tab active" type="button" data-tab="overview">
+            <span aria-hidden="true">◇</span>Мой VPN
+          </button>
+          <button class="account-tab" type="button" data-tab="payments">
+            <span aria-hidden="true">▭</span>Тарифы
+          </button>
+          <button class="account-tab" type="button" data-tab="devices">
+            <span aria-hidden="true">▤</span>Инструкция
+          </button>
+          <button class="account-tab" type="button" data-tab="help">
+            <span aria-hidden="true">⌁</span>Поддержка
+          </button>
+          <div class="account-user">
+            <div>
+              <strong data-account-user>aksenov_1998</strong>
+              <small data-account-provider>Telegram подключен</small>
+            </div>
+            <button type="button" data-close-account aria-label="Выйти">↪</button>
+          </div>
+        </aside>
+
+        <section class="account-main">
+          <div class="account-head dashboard-email-card">
+            <span class="dash-icon">✓</span>
+            <div>
+              <span>Email привязан</span>
+              <h2 id="accountTitle" data-account-title>Мой VPN</h2>
+              <p data-account-email>aksenov_1998@efir.local</p>
+            </div>
+            <button class="close-button" type="button" data-close-account aria-label="Закрыть">
+              ×
+            </button>
+          </div>
+
+          <div class="tab-panel active" data-panel="overview">
+            <article class="dashboard-card vpn-active-card">
+              <div class="dashboard-card-head">
+                <span class="dash-icon">✓</span>
+                <div>
+                  <h3>VPN активен</h3>
+                  <p>Осталось 4 дн.</p>
+                </div>
+                <b class="status-badge">Онлайн</b>
+              </div>
+              <div class="vpn-metrics">
+                <div class="metric-card metric-green">
+                  <span>Действует до</span>
+                  <strong>19.06.26</strong>
+                  <button type="button" aria-label="Продлить подписку">+</button>
+                </div>
+                <div class="metric-card metric-blue">
+                  <span>Устройства</span>
+                  <strong>2 <small>/ 5</small></strong>
+                  <button type="button" aria-label="Добавить устройство">+</button>
+                </div>
+              </div>
+            </article>
+
+            <article class="dashboard-card traffic-card">
+              <div class="dashboard-card-head">
+                <span class="dash-icon dash-purple">⌁</span>
+                <div>
+                  <h3>LTE-трафик</h3>
+                  <p>Сброс 01.07.2026 · через 15 дн.</p>
+                </div>
+                <b class="status-badge">Норма</b>
+              </div>
+              <div class="traffic-value">
+                <strong>76.0</strong>
+                <span>ГБ</span>
+              </div>
+              <p class="traffic-note">осталось из 80 ГБ · использовано 5%</p>
+              <div class="traffic-bar" aria-label="Использовано 5%">
+                <span></span>
+              </div>
+              <button class="buy-traffic-button" type="button">
+                <span>□</span>
+                Купить пакет
+                <b>+50 ГБ · 100 ₽</b>
+              </button>
+              <p class="card-footnote">
+                Лимит 80 ГБ обновляется 1 числа каждого месяца.
+                Неиспользованный остаток купленного пакета переносится в следующий месяц.
+              </p>
+            </article>
+
+            <article class="dashboard-card key-card">
+              <div class="dashboard-card-head">
+                <span class="dash-icon">⌁</span>
+                <div>
+                  <h3>Ключ подключения</h3>
+                  <p>Скопируйте и вставьте в Happ, либо нажмите кнопку ниже.</p>
+                </div>
+              </div>
+              <div class="subscription-box">
+                <span>⌁</span>
+                <div>
+                  <p id="subLink" data-subscription-link="https://sub.efirvpn.ru/sub/demo-user-key">
+                    https://sub.efirvpn.ru/sub/demo-user-key
+                  </p>
+                </div>
+                <button type="button" data-copy-sub>Копировать</button>
+              </div>
+              <div class="key-actions">
+                <button class="happ-button" type="button" data-open-happ>Добавить в Happ</button>
+                <button class="ghost-button" type="button">Перевыпустить ключ</button>
+              </div>
+            </article>
+
+            <article class="dashboard-card referral-card">
+              <span class="dash-icon dash-purple">□</span>
+              <div>
+                <h3>Пригласить друга</h3>
+                <p>Когда друг оплатит: +20 дней вам и +10 дней другу.</p>
+              </div>
+              <button type="button">Открыть⌄</button>
+            </article>
+          </div>
+
+          <div class="tab-panel" data-panel="devices">
+            <article class="dashboard-card">
+              <h3>Инструкция подключения</h3>
+              <div class="guide-list">
+                <p><b>1.</b> Установите Happ на устройство.</p>
+                <p><b>2.</b> Нажмите “Добавить в Happ” или скопируйте ключ.</p>
+                <p><b>3.</b> Выберите сервер и нажмите подключение.</p>
+              </div>
+            </article>
+            <article class="dashboard-card">
+              <h3>Мои устройства</h3>
+              <div class="device-row">
+                <span>iPhone 15</span>
+                <small>активно сегодня</small>
+                <button type="button">Отключить</button>
+              </div>
+              <div class="device-row">
+                <span>MacBook</span>
+                <small>активно вчера</small>
+                <button type="button">Отключить</button>
+              </div>
+            </article>
+          </div>
+
+          <div class="tab-panel" data-panel="payments">
+            <article class="dashboard-card tariffs-card">
+              <h3>Продлить подписку</h3>
+              <button class="tariff-line" type="button"><span>1 месяц</span><b>299 ₽</b></button>
+              <button class="tariff-line" type="button"><span>3 месяца</span><b>799 ₽</b></button>
+              <button class="tariff-line" type="button"><span>6 месяцев</span><b>1499 ₽</b></button>
+              <button class="tariff-line" type="button"><span>12 месяцев</span><b>2199 ₽</b></button>
+            </article>
+          </div>
+
+          <div class="tab-panel" data-panel="help">
+            <article class="dashboard-card">
+              <h3>Поддержка в Telegram</h3>
+              <p>Напишите нам, если не получается добавить ключ или выбрать сервер.</p>
+              <a
+                class="support-link"
+                href="https://t.me/efirvpn_bot"
+                target="_blank"
+                rel="noopener noreferrer external"
+                referrerpolicy="no-referrer"
+                >Открыть поддержку</a
+              >
+            </article>
+          </div>
+        </section>
+      </div>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite">Ссылка скопирована</div>
+    <script src="./app.js" defer></script>
+  </body>
+</html>
