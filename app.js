@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const accountDialog = document.querySelector("#accountDialog");
+  const accountPage = document.querySelector("#account");
   const authDialog = document.querySelector("#authDialog");
   const openAccountButtons = document.querySelectorAll("[data-open-account]");
   const closeAccountButtons = document.querySelectorAll("[data-close-account]");
@@ -42,6 +42,7 @@
 
   let toastTimer = 0;
   let isAuthenticated = false;
+  let pendingAccountTab = "overview";
   let pendingEmail = "";
   let currentIdentity = {
     email: "aksenov_1998@efir.local",
@@ -88,6 +89,10 @@
     if (authDialog?.open) {
       authDialog.close();
     }
+
+    if (!isAuthenticated && window.location.hash === "#account") {
+      window.history.pushState(null, "", "#home");
+    }
   }
 
   function updateAccountIdentity() {
@@ -125,7 +130,8 @@
       authLabel.textContent = "Кабинет";
     }
     closeAuth();
-    openAccount("overview", true);
+    openAccount(pendingAccountTab, true);
+    pendingAccountTab = "overview";
     showToast(provider === "email" ? "Вход по email выполнен" : "Вход через Telegram выполнен");
   }
 
@@ -142,26 +148,57 @@
   }
 
   function openAccount(tab = "overview", skipAuthCheck = false) {
+    const safeTab = getSafeTab(tab);
+
     if (!skipAuthCheck && !isAuthenticated) {
+      pendingAccountTab = safeTab;
       openAuth("telegram");
       return;
     }
 
-    if (!accountDialog || typeof accountDialog.showModal !== "function") {
+    if (!accountPage) {
       return;
     }
 
-    if (!accountDialog.open) {
-      accountDialog.showModal();
+    accountPage.hidden = false;
+    document.body.classList.add("account-route");
+
+    if (window.location.hash !== "#account") {
+      window.history.pushState(null, "", "#account");
     }
 
-    setTab(tab);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    setTab(safeTab);
   }
 
   function closeAccount() {
-    if (accountDialog?.open) {
-      accountDialog.close();
+    isAuthenticated = false;
+    pendingAccountTab = "overview";
+
+    if (accountPage) {
+      accountPage.hidden = true;
     }
+
+    document.body.classList.remove("account-route");
+
+    if (authLabel) {
+      authLabel.textContent = "Войти";
+    }
+
+    if (window.location.hash === "#account") {
+      window.history.pushState(null, "", "#home");
+    }
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    showToast("Вы вышли из личного кабинета");
+  }
+
+  function leaveAccountView() {
+    if (accountPage) {
+      accountPage.hidden = true;
+    }
+
+    document.body.classList.remove("account-route");
   }
 
   function setTab(tabName) {
@@ -211,12 +248,6 @@
 
   authMethods.forEach((method) => {
     method.addEventListener("click", () => setAuthMethod(method.dataset.authMethod));
-  });
-
-  accountDialog?.addEventListener("click", (event) => {
-    if (event.target === accountDialog) {
-      closeAccount();
-    }
   });
 
   authDialog?.addEventListener("click", (event) => {
@@ -285,4 +316,19 @@
       showToast(`Выбран тариф: ${plan}`);
     });
   });
+
+  window.addEventListener("hashchange", () => {
+    if (window.location.hash === "#account") {
+      openAccount("overview");
+      return;
+    }
+
+    if (document.body.classList.contains("account-route")) {
+      leaveAccountView();
+    }
+  });
+
+  if (window.location.hash === "#account") {
+    openAccount("overview");
+  }
 })();

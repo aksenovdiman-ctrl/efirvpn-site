@@ -221,8 +221,16 @@
       </div>
     </dialog>
 
-    <dialog class="account-dialog" id="accountDialog" aria-labelledby="accountTitle">
+    <section class="account-page" id="account" aria-labelledby="accountTitle" hidden>
       <div class="account-shell">
+        <div class="account-mobile-top">
+          <a class="account-mobile-brand" href="#home" data-close-account aria-label="Efir VPN">
+            <span class="brand-mark"></span>
+            <strong>Efir<span>VPN</span></strong>
+          </a>
+          <button class="account-exit-button" type="button" data-close-account>Выйти</button>
+        </div>
+
         <aside class="account-sidebar">
           <div class="account-brand">
             <span class="brand-mark"></span>
@@ -257,8 +265,8 @@
               <h2 id="accountTitle" data-account-title>Мой VPN</h2>
               <p data-account-email>aksenov_1998@efir.local</p>
             </div>
-            <button class="close-button" type="button" data-close-account aria-label="Закрыть">
-              ×
+            <button class="account-exit-button desktop-only" type="button" data-close-account>
+              Выйти
             </button>
           </div>
 
@@ -397,7 +405,7 @@
           </div>
         </section>
       </div>
-    </dialog>
+    </section>
 
     <div class="toast" id="toast" role="status" aria-live="polite">Ссылка скопирована</div>
     <script src="./app.js" defer></script>
