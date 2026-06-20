@@ -37,7 +37,7 @@
   const allowedTabs = new Set(Object.keys(titles));
   const allowedPlans = new Set(["1 месяц", "3 месяца", "6 месяцев", "12 месяцев"]);
   const allowedAuthMethods = new Set(["telegram", "email"]);
-  const allowedSubscriptionHost = "sub.efirvpn.ru";
+  const allowedSubscriptionHost = "panel.efirvpn.ru";
   const demoEmailCode = "123456";
 
   let toastTimer = 0;
