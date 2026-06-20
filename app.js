@@ -288,19 +288,30 @@
 
     if (trafficLeft && trafficNote && trafficBar) {
       const limit = Number(currentIdentity.trafficLimitGb) || 0;
-      const used = limit > 0 ? Math.min(Number(currentIdentity.trafficUsedGb) || 0, limit) : 0;
-      const left = Math.max(0, limit - used);
+      const rawUsed = Number(currentIdentity.trafficUsedGb) || 0;
+      const used = limit > 0 ? Math.min(rawUsed, limit) : rawUsed;
+      const left = limit > 0 ? Math.max(0, limit - used) : 0;
       const usedPercent = limit > 0 ? Math.round((used / limit) * 100) : 0;
 
-      trafficLeft.textContent = hasAccountData && limit > 0 ? left.toFixed(1) : "—";
-      trafficNote.textContent =
-        hasAccountData && limit > 0
-          ? `осталось из ${limit} ГБ · использовано ${usedPercent}%`
-          : "Войдите, чтобы увидеть остаток трафика";
-      trafficBar.style.width = `${usedPercent}%`;
+      if (hasAccountData && limit === 0) {
+        trafficLeft.textContent = "∞";
+        trafficNote.textContent = `без ограничения тарифа · использовано ${rawUsed.toFixed(2)} ГБ`;
+        trafficBar.style.width = "100%";
+      } else {
+        trafficLeft.textContent = hasAccountData && limit > 0 ? left.toFixed(1) : "—";
+        trafficNote.textContent =
+          hasAccountData && limit > 0
+            ? `осталось из ${limit} ГБ · использовано ${usedPercent}%`
+            : "Войдите, чтобы увидеть остаток трафика";
+        trafficBar.style.width = `${usedPercent}%`;
+      }
       trafficBar.parentElement?.setAttribute(
         "aria-label",
-        hasAccountData ? `Использовано ${usedPercent}%` : "Трафик появится после входа"
+        hasAccountData
+          ? limit === 0
+            ? "Трафик без ограничения тарифа"
+            : `Использовано ${usedPercent}%`
+          : "Трафик появится после входа"
       );
     }
 
