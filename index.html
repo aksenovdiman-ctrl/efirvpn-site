@@ -329,7 +329,7 @@
           <div class="account-head dashboard-email-card">
             <span class="dash-icon">✓</span>
             <div>
-              <span>Email привязан</span>
+              <span data-account-provider-title>Email привязан</span>
               <h2 id="accountTitle" data-account-title>Мой VPN</h2>
               <p data-account-email>aksenov_1998@efir.local</p>
             </div>
@@ -344,14 +344,14 @@
                 <span class="dash-icon">✓</span>
                 <div>
                   <h3>VPN активен</h3>
-                  <p>Осталось 4 дн.</p>
+                  <p data-account-days-left>Осталось 4 дн.</p>
                 </div>
                 <b class="status-badge">Онлайн</b>
               </div>
               <div class="vpn-metrics">
                 <div class="metric-card metric-green">
                   <span>Действует до</span>
-                  <strong>19.06.26</strong>
+                  <strong data-account-expires>19.06.26</strong>
                   <button type="button" aria-label="Продлить подписку">+</button>
                 </div>
                 <div class="metric-card metric-blue">
@@ -372,12 +372,12 @@
                 <b class="status-badge">Норма</b>
               </div>
               <div class="traffic-value">
-                <strong>76.0</strong>
+                <strong data-traffic-left>76.0</strong>
                 <span>ГБ</span>
               </div>
-              <p class="traffic-note">осталось из 80 ГБ · использовано 5%</p>
+              <p class="traffic-note" data-traffic-note>осталось из 80 ГБ · использовано 5%</p>
               <div class="traffic-bar" aria-label="Использовано 5%">
-                <span></span>
+                <span data-traffic-bar></span>
               </div>
               <div class="subscription-description">
                 <p>🟢 Основной доступ: безлимитный трафик</p>
@@ -406,15 +406,15 @@
               <div class="subscription-box">
                 <span>⌁</span>
                 <div>
-                  <p id="subLink" data-subscription-link="https://panel.efirvpn.ru/api/sub/demo-user-key">
-                    https://panel.efirvpn.ru/api/sub/персональный-ключ
+                  <p id="subLink" data-subscription-link="https://panel.efirvpn.ru/api/sub/efir-preview-key">
+                    Ключ появится после входа
                   </p>
                 </div>
                 <button type="button" data-copy-sub>Копировать</button>
               </div>
               <div class="key-actions">
                 <button class="happ-button" type="button" data-open-happ>Добавить в Happ</button>
-                <button class="ghost-button" type="button">Перевыпустить ключ</button>
+                <button class="ghost-button" type="button" data-rotate-key>Перевыпустить ключ</button>
               </div>
             </article>
 
