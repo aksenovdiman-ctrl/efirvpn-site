@@ -16,7 +16,7 @@
   const codeBox = document.querySelector("[data-code-box]");
   const confirmCodeButton = document.querySelector("[data-confirm-code]");
   const authMessage = document.querySelector("[data-auth-message]");
-  const demoTelegramButton = document.querySelector("[data-demo-telegram-login]");
+  const telegramLoginButton = document.querySelector("[data-telegram-login]");
   const accountTitle = document.querySelector("[data-account-title]");
   const accountUser = document.querySelector("[data-account-user]");
   const accountProvider = document.querySelector("[data-account-provider]");
@@ -236,6 +236,12 @@
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
   }
 
+  function wait(ms) {
+    return new Promise((resolve) => {
+      window.setTimeout(resolve, ms);
+    });
+  }
+
   function openAuth(method = "telegram") {
     if (!authDialog || typeof authDialog.showModal !== "function") {
       return;
@@ -342,6 +348,21 @@
     openAccount(pendingAccountTab, true);
     pendingAccountTab = "overview";
     showToast(provider === "email" ? "Вход по email выполнен" : "Вход через Telegram выполнен");
+  }
+
+  function completeApiAuth(data, successMessage) {
+    applyApiAccount(data.account, data.token);
+    updateAccountIdentity();
+    saveStoredAccount();
+
+    if (authLabel) {
+      authLabel.textContent = "Кабинет";
+    }
+    isAuthenticated = true;
+    closeAuth();
+    openAccount(pendingAccountTab, true);
+    pendingAccountTab = "overview";
+    showToast(successMessage);
   }
 
   function setAuthMethod(methodName) {
@@ -467,8 +488,44 @@
     }
   });
 
-  demoTelegramButton?.addEventListener("click", () => {
-    completeAuth("telegram");
+  telegramLoginButton?.addEventListener("click", async () => {
+    telegramLoginButton.disabled = true;
+    telegramLoginButton.textContent = "Откройте Telegram";
+
+    try {
+      const login = await apiFetch("/api/auth/telegram/request", {
+        method: "POST",
+        body: JSON.stringify({}),
+      });
+
+      authMessage.textContent = "Подтвердите вход в Telegram. Кабинет откроется автоматически.";
+      window.open(login.botUrl, "_blank", "noopener,noreferrer");
+
+      for (let attempt = 0; attempt < 30; attempt += 1) {
+        await wait(2000);
+        const status = await apiFetch(
+          `/api/auth/telegram/status/${encodeURIComponent(login.requestToken)}`
+        );
+
+        if (status.status === "confirmed") {
+          completeApiAuth(status, "Вход через Telegram выполнен");
+          return;
+        }
+
+        if (status.status === "expired") {
+          authMessage.textContent = "Ссылка устарела. Нажмите вход через Telegram еще раз.";
+          return;
+        }
+      }
+
+      authMessage.textContent = "Не дождались подтверждения. Нажмите кнопку еще раз.";
+    } catch {
+      authMessage.textContent = "API пока недоступен. Включен демо-вход через Telegram.";
+      completeAuth("telegram");
+    } finally {
+      telegramLoginButton.disabled = false;
+      telegramLoginButton.textContent = "Войти через Telegram";
+    }
   });
 
   emailAuthForm?.addEventListener("submit", async (event) => {
@@ -513,18 +570,7 @@
         method: "POST",
         body: JSON.stringify({ email: pendingEmail, code }),
       });
-      applyApiAccount(data.account, data.token);
-      updateAccountIdentity();
-      saveStoredAccount();
-
-      if (authLabel) {
-        authLabel.textContent = "Кабинет";
-      }
-      isAuthenticated = true;
-      closeAuth();
-      openAccount(pendingAccountTab, true);
-      pendingAccountTab = "overview";
-      showToast("Вход по email выполнен");
+      completeApiAuth(data, "Вход по email выполнен");
       return;
     } catch {
       if (code !== demoEmailCode) {
