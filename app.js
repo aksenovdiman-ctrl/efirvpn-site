@@ -49,7 +49,6 @@
   const subscriptionBase = "https://panel.efirvpn.ru/api/sub";
   const storageKey = "efirvpn.account.v1";
   const sessionStorageKey = "efirvpn.session.v1";
-  const demoEmailCode = "123456";
 
   let toastTimer = 0;
   let isAuthenticated = false;
@@ -95,18 +94,6 @@
 
     const diffMs = expires.getTime() - Date.now();
     return Math.max(0, Math.ceil(diffMs / 86_400_000));
-  }
-
-  function createToken(seed) {
-    let hash = 2166136261;
-    const source = `${seed}:${Date.now()}:${Math.random()}`;
-
-    for (let index = 0; index < source.length; index += 1) {
-      hash ^= source.charCodeAt(index);
-      hash = Math.imul(hash, 16777619);
-    }
-
-    return `efir_${Math.abs(hash).toString(36)}_${Date.now().toString(36)}`;
   }
 
   function getSubscriptionUrl(token = currentIdentity.subscriptionToken) {
@@ -310,46 +297,6 @@
     }
   }
 
-  function completeAuth(provider) {
-    isAuthenticated = true;
-    const baseTokenSeed = provider === "email" ? pendingEmail : "telegram";
-    currentIdentity =
-      provider === "email"
-        ? {
-            email: pendingEmail,
-            provider: "Email подключен",
-            providerTitle: "Email привязан",
-            username: pendingEmail.split("@")[0],
-            subscriptionUrl: "",
-            subscriptionToken: createToken(baseTokenSeed),
-            expiresAt: getDateAfterDays(5),
-            trafficLimitGb: 80,
-            trafficUsedGb: 4,
-          }
-        : {
-            email: "aksenov_1998@efir.local",
-            provider: "Telegram подключен",
-            providerTitle: "Telegram подключен",
-            username: "aksenov_1998",
-            subscriptionUrl: "",
-            subscriptionToken: createToken(baseTokenSeed),
-            expiresAt: getDateAfterDays(5),
-            trafficLimitGb: 80,
-            trafficUsedGb: 4,
-          };
-
-    updateAccountIdentity();
-    saveStoredAccount();
-
-    if (authLabel) {
-      authLabel.textContent = "Кабинет";
-    }
-    closeAuth();
-    openAccount(pendingAccountTab, true);
-    pendingAccountTab = "overview";
-    showToast(provider === "email" ? "Вход по email выполнен" : "Вход через Telegram выполнен");
-  }
-
   function completeApiAuth(data, successMessage) {
     applyApiAccount(data.account, data.token);
     updateAccountIdentity();
@@ -520,8 +467,8 @@
 
       authMessage.textContent = "Не дождались подтверждения. Нажмите кнопку еще раз.";
     } catch {
-      authMessage.textContent = "API пока недоступен. Включен демо-вход через Telegram.";
-      completeAuth("telegram");
+      authMessage.textContent =
+        "API пока недоступен. Попробуйте позже или напишите в поддержку.";
     } finally {
       telegramLoginButton.disabled = false;
       telegramLoginButton.textContent = "Войти через Telegram";
@@ -548,11 +495,10 @@
         method: "POST",
         body: JSON.stringify({ email }),
       });
-      authMessage.textContent = data.demoCode
-        ? `Код: ${data.demoCode}`
-        : "Код отправлен на почту.";
+      authMessage.textContent = data.ok ? "Код отправлен на почту." : "Повторите попытку позже.";
     } catch {
-      authMessage.textContent = "Демо-код: 123456. API пока недоступен.";
+      authMessage.textContent =
+        "API пока недоступен. Попробуйте позже или напишите в поддержку.";
     }
   });
 
@@ -573,13 +519,9 @@
       completeApiAuth(data, "Вход по email выполнен");
       return;
     } catch {
-      if (code !== demoEmailCode) {
-        authMessage.textContent = "Неверный код. Для демо используйте 123456.";
-        return;
-      }
+      authMessage.textContent = "Неверный код или API временно недоступен.";
+      return;
     }
-
-    completeAuth("email");
   });
 
   copyButton?.addEventListener("click", async () => {
@@ -614,18 +556,12 @@
         showToast("Ключ перевыпущен");
         return;
       } catch {
-        showToast("API недоступен, обновил демо-ключ");
+        showToast("API недоступен, ключ не изменен");
+        return;
       }
     }
 
-    currentIdentity = {
-      ...currentIdentity,
-      subscriptionUrl: "",
-      subscriptionToken: createToken(currentIdentity.email || currentIdentity.username),
-    };
-    updateAccountIdentity();
-    saveStoredAccount();
-    showToast("Ключ перевыпущен");
+    showToast("Войдите заново, чтобы перевыпустить ключ");
   });
 
   planButtons.forEach((button) => {
