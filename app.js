@@ -62,16 +62,10 @@
     username: "Аккаунт",
     subscriptionUrl: "",
     subscriptionToken: "",
-    expiresAt: getDateAfterDays(5),
-    trafficLimitGb: 80,
+    expiresAt: "",
+    trafficLimitGb: 0,
     trafficUsedGb: 0,
   };
-
-  function getDateAfterDays(days) {
-    const date = new Date();
-    date.setDate(date.getDate() + days);
-    return date.toISOString();
-  }
 
   function formatShortDate(value) {
     const date = new Date(value);
@@ -261,6 +255,7 @@
 
   function updateAccountIdentity() {
     const subscriptionUrl = getSubscriptionUrl();
+    const hasAccountData = isAuthenticated && Boolean(subscriptionUrl);
 
     if (accountUser) {
       accountUser.textContent = currentIdentity.username || "Аккаунт";
@@ -279,24 +274,34 @@
     }
 
     if (accountExpires) {
-      accountExpires.textContent = formatShortDate(currentIdentity.expiresAt);
+      accountExpires.textContent = hasAccountData ? formatShortDate(currentIdentity.expiresAt) : "—";
     }
 
     if (accountDaysLeft) {
-      const daysLeft = getDaysLeft(currentIdentity.expiresAt);
-      accountDaysLeft.textContent = `Осталось ${daysLeft} дн.`;
+      if (hasAccountData) {
+        const daysLeft = getDaysLeft(currentIdentity.expiresAt);
+        accountDaysLeft.textContent = `Осталось ${daysLeft} дн.`;
+      } else {
+        accountDaysLeft.textContent = "Войдите, чтобы увидеть срок";
+      }
     }
 
     if (trafficLeft && trafficNote && trafficBar) {
-      const limit = Number(currentIdentity.trafficLimitGb) || 80;
-      const used = Math.min(Number(currentIdentity.trafficUsedGb) || 0, limit);
+      const limit = Number(currentIdentity.trafficLimitGb) || 0;
+      const used = limit > 0 ? Math.min(Number(currentIdentity.trafficUsedGb) || 0, limit) : 0;
       const left = Math.max(0, limit - used);
-      const usedPercent = Math.round((used / limit) * 100);
+      const usedPercent = limit > 0 ? Math.round((used / limit) * 100) : 0;
 
-      trafficLeft.textContent = left.toFixed(1);
-      trafficNote.textContent = `осталось из ${limit} ГБ · использовано ${usedPercent}%`;
+      trafficLeft.textContent = hasAccountData && limit > 0 ? left.toFixed(1) : "—";
+      trafficNote.textContent =
+        hasAccountData && limit > 0
+          ? `осталось из ${limit} ГБ · использовано ${usedPercent}%`
+          : "Войдите, чтобы увидеть остаток трафика";
       trafficBar.style.width = `${usedPercent}%`;
-      trafficBar.parentElement?.setAttribute("aria-label", `Использовано ${usedPercent}%`);
+      trafficBar.parentElement?.setAttribute(
+        "aria-label",
+        hasAccountData ? `Использовано ${usedPercent}%` : "Трафик появится после входа"
+      );
     }
 
     if (subLink) {
