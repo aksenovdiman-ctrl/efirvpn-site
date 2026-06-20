@@ -20,9 +20,16 @@
   const accountTitle = document.querySelector("[data-account-title]");
   const accountUser = document.querySelector("[data-account-user]");
   const accountProvider = document.querySelector("[data-account-provider]");
+  const accountProviderTitle = document.querySelector("[data-account-provider-title]");
   const accountEmail = document.querySelector("[data-account-email]");
+  const accountDaysLeft = document.querySelector("[data-account-days-left]");
+  const accountExpires = document.querySelector("[data-account-expires]");
+  const trafficLeft = document.querySelector("[data-traffic-left]");
+  const trafficNote = document.querySelector("[data-traffic-note]");
+  const trafficBar = document.querySelector("[data-traffic-bar]");
   const copyButton = document.querySelector("[data-copy-sub]");
   const openHappButton = document.querySelector("[data-open-happ]");
+  const rotateKeyButton = document.querySelector("[data-rotate-key]");
   const subLink = document.querySelector("#subLink");
   const toast = document.querySelector("#toast");
   const planButtons = document.querySelectorAll("[data-plan]");
@@ -38,6 +45,8 @@
   const allowedPlans = new Set(["1 месяц", "3 месяца", "6 месяцев", "12 месяцев"]);
   const allowedAuthMethods = new Set(["telegram", "email"]);
   const allowedSubscriptionHost = "panel.efirvpn.ru";
+  const subscriptionBase = "https://panel.efirvpn.ru/api/sub";
+  const storageKey = "efirvpn.account.v1";
   const demoEmailCode = "123456";
 
   let toastTimer = 0;
@@ -47,8 +56,96 @@
   let currentIdentity = {
     email: "aksenov_1998@efir.local",
     provider: "Telegram подключен",
+    providerTitle: "Telegram подключен",
     username: "aksenov_1998",
+    subscriptionToken: "efir-preview-key",
+    expiresAt: getDateAfterDays(5),
+    trafficLimitGb: 80,
+    trafficUsedGb: 4,
   };
+
+  function getDateAfterDays(days) {
+    const date = new Date();
+    date.setDate(date.getDate() + days);
+    return date.toISOString();
+  }
+
+  function formatShortDate(value) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return "—";
+    }
+
+    return new Intl.DateTimeFormat("ru-RU", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "2-digit",
+    }).format(date);
+  }
+
+  function getDaysLeft(value) {
+    const expires = new Date(value);
+    if (Number.isNaN(expires.getTime())) {
+      return 0;
+    }
+
+    const diffMs = expires.getTime() - Date.now();
+    return Math.max(0, Math.ceil(diffMs / 86_400_000));
+  }
+
+  function createToken(seed) {
+    let hash = 2166136261;
+    const source = `${seed}:${Date.now()}:${Math.random()}`;
+
+    for (let index = 0; index < source.length; index += 1) {
+      hash ^= source.charCodeAt(index);
+      hash = Math.imul(hash, 16777619);
+    }
+
+    return `efir_${Math.abs(hash).toString(36)}_${Date.now().toString(36)}`;
+  }
+
+  function getSubscriptionUrl(token = currentIdentity.subscriptionToken) {
+    return `${subscriptionBase}/${encodeURIComponent(token)}`;
+  }
+
+  function loadStoredAccount() {
+    try {
+      const raw = window.localStorage.getItem(storageKey);
+      if (!raw) {
+        return;
+      }
+
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object") {
+        return;
+      }
+
+      currentIdentity = {
+        ...currentIdentity,
+        ...parsed,
+      };
+      isAuthenticated = true;
+    } catch {
+      window.localStorage.removeItem(storageKey);
+    }
+  }
+
+  function saveStoredAccount() {
+    try {
+      window.localStorage.setItem(storageKey, JSON.stringify(currentIdentity));
+    } catch {
+      showToast("Браузер не сохранил сессию");
+    }
+  }
+
+  function clearStoredAccount() {
+    try {
+      window.localStorage.removeItem(storageKey);
+    } catch {
+      // The in-memory session is still cleared below.
+    }
+  }
 
   function getSafeTab(tabName) {
     return allowedTabs.has(tabName) ? tabName : "overview";
@@ -96,6 +193,8 @@
   }
 
   function updateAccountIdentity() {
+    const subscriptionUrl = getSubscriptionUrl();
+
     if (accountUser) {
       accountUser.textContent = currentIdentity.username;
     }
@@ -104,27 +203,69 @@
       accountProvider.textContent = currentIdentity.provider;
     }
 
+    if (accountProviderTitle) {
+      accountProviderTitle.textContent = currentIdentity.providerTitle || currentIdentity.provider;
+    }
+
     if (accountEmail) {
       accountEmail.textContent = currentIdentity.email;
+    }
+
+    if (accountExpires) {
+      accountExpires.textContent = formatShortDate(currentIdentity.expiresAt);
+    }
+
+    if (accountDaysLeft) {
+      const daysLeft = getDaysLeft(currentIdentity.expiresAt);
+      accountDaysLeft.textContent = `Осталось ${daysLeft} дн.`;
+    }
+
+    if (trafficLeft && trafficNote && trafficBar) {
+      const limit = Number(currentIdentity.trafficLimitGb) || 80;
+      const used = Math.min(Number(currentIdentity.trafficUsedGb) || 0, limit);
+      const left = Math.max(0, limit - used);
+      const usedPercent = Math.round((used / limit) * 100);
+
+      trafficLeft.textContent = left.toFixed(1);
+      trafficNote.textContent = `осталось из ${limit} ГБ · использовано ${usedPercent}%`;
+      trafficBar.style.width = `${usedPercent}%`;
+      trafficBar.parentElement?.setAttribute("aria-label", `Использовано ${usedPercent}%`);
+    }
+
+    if (subLink) {
+      subLink.dataset.subscriptionLink = subscriptionUrl;
+      subLink.textContent = subscriptionUrl;
     }
   }
 
   function completeAuth(provider) {
     isAuthenticated = true;
+    const baseTokenSeed = provider === "email" ? pendingEmail : "telegram";
     currentIdentity =
       provider === "email"
         ? {
             email: pendingEmail,
             provider: "Email подключен",
+            providerTitle: "Email привязан",
             username: pendingEmail.split("@")[0],
+            subscriptionToken: createToken(baseTokenSeed),
+            expiresAt: getDateAfterDays(5),
+            trafficLimitGb: 80,
+            trafficUsedGb: 4,
           }
         : {
             email: "aksenov_1998@efir.local",
             provider: "Telegram подключен",
+            providerTitle: "Telegram подключен",
             username: "aksenov_1998",
+            subscriptionToken: createToken(baseTokenSeed),
+            expiresAt: getDateAfterDays(5),
+            trafficLimitGb: 80,
+            trafficUsedGb: 4,
           };
 
     updateAccountIdentity();
+    saveStoredAccount();
 
     if (authLabel) {
       authLabel.textContent = "Кабинет";
@@ -174,6 +315,7 @@
   function closeAccount() {
     isAuthenticated = false;
     pendingAccountTab = "overview";
+    clearStoredAccount();
 
     if (accountPage) {
       accountPage.hidden = true;
@@ -308,6 +450,21 @@
     showToast("Открываем ключ подключения");
   });
 
+  rotateKeyButton?.addEventListener("click", () => {
+    if (!isAuthenticated) {
+      openAuth("telegram");
+      return;
+    }
+
+    currentIdentity = {
+      ...currentIdentity,
+      subscriptionToken: createToken(currentIdentity.email || currentIdentity.username),
+    };
+    updateAccountIdentity();
+    saveStoredAccount();
+    showToast("Ключ перевыпущен");
+  });
+
   planButtons.forEach((button) => {
     button.addEventListener("click", () => {
       const plan = allowedPlans.has(button.dataset.plan) ? button.dataset.plan : "тариф";
@@ -327,6 +484,14 @@
       leaveAccountView();
     }
   });
+
+  loadStoredAccount();
+  if (isAuthenticated) {
+    updateAccountIdentity();
+    if (authLabel) {
+      authLabel.textContent = "Кабинет";
+    }
+  }
 
   if (window.location.hash === "#account") {
     openAccount("overview");
