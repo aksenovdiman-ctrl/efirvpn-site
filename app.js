@@ -45,19 +45,23 @@
   const allowedPlans = new Set(["1 месяц", "3 месяца", "6 месяцев", "12 месяцев"]);
   const allowedAuthMethods = new Set(["telegram", "email"]);
   const allowedSubscriptionHost = "panel.efirvpn.ru";
+  const apiBase = "https://api.efirvpn.ru";
   const subscriptionBase = "https://panel.efirvpn.ru/api/sub";
   const storageKey = "efirvpn.account.v1";
+  const sessionStorageKey = "efirvpn.session.v1";
   const demoEmailCode = "123456";
 
   let toastTimer = 0;
   let isAuthenticated = false;
   let pendingAccountTab = "overview";
   let pendingEmail = "";
+  let apiSessionToken = "";
   let currentIdentity = {
     email: "aksenov_1998@efir.local",
     provider: "Telegram подключен",
     providerTitle: "Telegram подключен",
     username: "aksenov_1998",
+    subscriptionUrl: "",
     subscriptionToken: "efir-preview-key",
     expiresAt: getDateAfterDays(5),
     trafficLimitGb: 80,
@@ -106,6 +110,10 @@
   }
 
   function getSubscriptionUrl(token = currentIdentity.subscriptionToken) {
+    if (currentIdentity.subscriptionUrl) {
+      return currentIdentity.subscriptionUrl;
+    }
+
     return `${subscriptionBase}/${encodeURIComponent(token)}`;
   }
 
@@ -125,6 +133,7 @@
         ...currentIdentity,
         ...parsed,
       };
+      apiSessionToken = window.localStorage.getItem(sessionStorageKey) || "";
       isAuthenticated = true;
     } catch {
       window.localStorage.removeItem(storageKey);
@@ -134,6 +143,9 @@
   function saveStoredAccount() {
     try {
       window.localStorage.setItem(storageKey, JSON.stringify(currentIdentity));
+      if (apiSessionToken) {
+        window.localStorage.setItem(sessionStorageKey, apiSessionToken);
+      }
     } catch {
       showToast("Браузер не сохранил сессию");
     }
@@ -142,9 +154,63 @@
   function clearStoredAccount() {
     try {
       window.localStorage.removeItem(storageKey);
+      window.localStorage.removeItem(sessionStorageKey);
     } catch {
       // The in-memory session is still cleared below.
     }
+  }
+
+  async function apiFetch(path, options = {}) {
+    const headers = {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    };
+
+    if (apiSessionToken) {
+      headers.Authorization = `Bearer ${apiSessionToken}`;
+    }
+
+    const response = await fetch(`${apiBase}${path}`, {
+      ...options,
+      headers,
+    });
+
+    if (!response.ok) {
+      throw new Error(`API ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  function applyApiAccount(account, token = apiSessionToken) {
+    if (!account || typeof account !== "object") {
+      throw new Error("Invalid account response");
+    }
+
+    apiSessionToken = token || apiSessionToken;
+    currentIdentity = {
+      ...currentIdentity,
+      email: account.email || currentIdentity.email,
+      provider: account.provider === "email" ? "Email подключен" : "Telegram подключен",
+      providerTitle: account.provider === "email" ? "Email привязан" : "Telegram подключен",
+      username: account.username || currentIdentity.username,
+      subscriptionUrl: account.subscriptionUrl || currentIdentity.subscriptionUrl,
+      expiresAt: account.expiresAt || currentIdentity.expiresAt,
+      trafficLimitGb: account.trafficLimitGb || currentIdentity.trafficLimitGb,
+      trafficUsedGb: account.trafficUsedGb ?? currentIdentity.trafficUsedGb,
+    };
+  }
+
+  async function refreshApiAccount() {
+    if (!apiSessionToken) {
+      return false;
+    }
+
+    const data = await apiFetch("/api/account");
+    applyApiAccount(data.account);
+    updateAccountIdentity();
+    saveStoredAccount();
+    return true;
   }
 
   function getSafeTab(tabName) {
@@ -248,6 +314,7 @@
             provider: "Email подключен",
             providerTitle: "Email привязан",
             username: pendingEmail.split("@")[0],
+            subscriptionUrl: "",
             subscriptionToken: createToken(baseTokenSeed),
             expiresAt: getDateAfterDays(5),
             trafficLimitGb: 80,
@@ -258,6 +325,7 @@
             provider: "Telegram подключен",
             providerTitle: "Telegram подключен",
             username: "aksenov_1998",
+            subscriptionUrl: "",
             subscriptionToken: createToken(baseTokenSeed),
             expiresAt: getDateAfterDays(5),
             trafficLimitGb: 80,
@@ -316,6 +384,7 @@
     isAuthenticated = false;
     pendingAccountTab = "overview";
     clearStoredAccount();
+    apiSessionToken = "";
 
     if (accountPage) {
       accountPage.hidden = true;
@@ -402,7 +471,7 @@
     completeAuth("telegram");
   });
 
-  emailAuthForm?.addEventListener("submit", (event) => {
+  emailAuthForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
 
     const formData = new FormData(emailAuthForm);
@@ -416,10 +485,21 @@
     pendingEmail = email;
     codeBox.hidden = false;
     emailSubmit.textContent = "Отправить код еще раз";
-    authMessage.textContent = "Демо-код: 123456. В продакшене код придет на почту.";
+
+    try {
+      const data = await apiFetch("/api/auth/email/request", {
+        method: "POST",
+        body: JSON.stringify({ email }),
+      });
+      authMessage.textContent = data.demoCode
+        ? `Код: ${data.demoCode}`
+        : "Код отправлен на почту.";
+    } catch {
+      authMessage.textContent = "Демо-код: 123456. API пока недоступен.";
+    }
   });
 
-  confirmCodeButton?.addEventListener("click", () => {
+  confirmCodeButton?.addEventListener("click", async () => {
     const codeInput = emailAuthForm?.elements.namedItem("code");
     const code = String(codeInput?.value || "").trim();
 
@@ -428,9 +508,29 @@
       return;
     }
 
-    if (code !== demoEmailCode) {
-      authMessage.textContent = "Неверный код. Для демо используйте 123456.";
+    try {
+      const data = await apiFetch("/api/auth/email/verify", {
+        method: "POST",
+        body: JSON.stringify({ email: pendingEmail, code }),
+      });
+      applyApiAccount(data.account, data.token);
+      updateAccountIdentity();
+      saveStoredAccount();
+
+      if (authLabel) {
+        authLabel.textContent = "Кабинет";
+      }
+      isAuthenticated = true;
+      closeAuth();
+      openAccount(pendingAccountTab, true);
+      pendingAccountTab = "overview";
+      showToast("Вход по email выполнен");
       return;
+    } catch {
+      if (code !== demoEmailCode) {
+        authMessage.textContent = "Неверный код. Для демо используйте 123456.";
+        return;
+      }
     }
 
     completeAuth("email");
@@ -450,14 +550,31 @@
     showToast("Открываем ключ подключения");
   });
 
-  rotateKeyButton?.addEventListener("click", () => {
+  rotateKeyButton?.addEventListener("click", async () => {
     if (!isAuthenticated) {
       openAuth("telegram");
       return;
     }
 
+    if (apiSessionToken) {
+      try {
+        const data = await apiFetch("/api/account/rotate-key", {
+          method: "POST",
+          body: JSON.stringify({}),
+        });
+        applyApiAccount(data.account);
+        updateAccountIdentity();
+        saveStoredAccount();
+        showToast("Ключ перевыпущен");
+        return;
+      } catch {
+        showToast("API недоступен, обновил демо-ключ");
+      }
+    }
+
     currentIdentity = {
       ...currentIdentity,
+      subscriptionUrl: "",
       subscriptionToken: createToken(currentIdentity.email || currentIdentity.username),
     };
     updateAccountIdentity();
@@ -488,6 +605,7 @@
   loadStoredAccount();
   if (isAuthenticated) {
     updateAccountIdentity();
+    refreshApiAccount().catch(() => {});
     if (authLabel) {
       authLabel.textContent = "Кабинет";
     }
