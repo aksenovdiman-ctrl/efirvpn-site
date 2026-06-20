@@ -56,15 +56,15 @@
   let pendingEmail = "";
   let apiSessionToken = "";
   let currentIdentity = {
-    email: "aksenov_1998@efir.local",
-    provider: "Telegram подключен",
-    providerTitle: "Telegram подключен",
-    username: "aksenov_1998",
+    email: "",
+    provider: "Войдите в кабинет",
+    providerTitle: "Войдите в кабинет",
+    username: "Аккаунт",
     subscriptionUrl: "",
-    subscriptionToken: "efir-preview-key",
+    subscriptionToken: "",
     expiresAt: getDateAfterDays(5),
     trafficLimitGb: 80,
-    trafficUsedGb: 4,
+    trafficUsedGb: 0,
   };
 
   function getDateAfterDays(days) {
@@ -99,6 +99,10 @@
   function getSubscriptionUrl(token = currentIdentity.subscriptionToken) {
     if (currentIdentity.subscriptionUrl) {
       return currentIdentity.subscriptionUrl;
+    }
+
+    if (!token) {
+      return "";
     }
 
     return `${subscriptionBase}/${encodeURIComponent(token)}`;
@@ -180,7 +184,7 @@
       email: account.email || currentIdentity.email,
       provider: account.provider === "email" ? "Email подключен" : "Telegram подключен",
       providerTitle: account.provider === "email" ? "Email привязан" : "Telegram подключен",
-      username: account.username || currentIdentity.username,
+      username: account.username || account.email || currentIdentity.username,
       subscriptionUrl: account.subscriptionUrl || currentIdentity.subscriptionUrl,
       expiresAt: account.expiresAt || currentIdentity.expiresAt,
       trafficLimitGb: account.trafficLimitGb || currentIdentity.trafficLimitGb,
@@ -206,6 +210,10 @@
 
   function getSafeSubscriptionLink() {
     const rawLink = subLink?.dataset.subscriptionLink || "";
+    if (!rawLink) {
+      throw new Error("Subscription link is not ready");
+    }
+
     const url = new URL(rawLink);
 
     if (url.protocol !== "https:" || url.hostname !== allowedSubscriptionHost) {
@@ -255,7 +263,7 @@
     const subscriptionUrl = getSubscriptionUrl();
 
     if (accountUser) {
-      accountUser.textContent = currentIdentity.username;
+      accountUser.textContent = currentIdentity.username || "Аккаунт";
     }
 
     if (accountProvider) {
@@ -267,7 +275,7 @@
     }
 
     if (accountEmail) {
-      accountEmail.textContent = currentIdentity.email;
+      accountEmail.textContent = currentIdentity.email || "Аккаунт не подключен";
     }
 
     if (accountExpires) {
@@ -293,7 +301,7 @@
 
     if (subLink) {
       subLink.dataset.subscriptionLink = subscriptionUrl;
-      subLink.textContent = subscriptionUrl;
+      subLink.textContent = subscriptionUrl || "Ключ появится после входа";
     }
   }
 
@@ -534,8 +542,19 @@
   });
 
   openHappButton?.addEventListener("click", () => {
-    window.open(getSafeSubscriptionLink(), "_blank", "noopener,noreferrer");
-    showToast("Открываем ключ подключения");
+    if (!isAuthenticated) {
+      openAuth("telegram");
+      return;
+    }
+
+    try {
+      const subscriptionUrl = getSafeSubscriptionLink();
+      navigator.clipboard?.writeText(subscriptionUrl).catch(() => {});
+      window.location.href = `happ://add/${encodeURIComponent(subscriptionUrl)}`;
+      showToast("Открываем Happ. Ссылка также скопирована");
+    } catch {
+      showToast("Ключ еще не готов");
+    }
   });
 
   rotateKeyButton?.addEventListener("click", async () => {
