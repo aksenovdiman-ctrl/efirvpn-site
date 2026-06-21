@@ -11,6 +11,7 @@
   const authMethods = document.querySelectorAll("[data-auth-method]");
   const authPanels = document.querySelectorAll("[data-auth-panel]");
   const authLabel = document.querySelector("[data-auth-label]");
+  const authReadinessItems = document.querySelectorAll("[data-auth-ready-item]");
   const emailAuthForm = document.querySelector("[data-email-auth]");
   const emailSubmit = document.querySelector("[data-email-submit]");
   const codeBox = document.querySelector("[data-code-box]");
@@ -171,6 +172,7 @@
     telegram: true,
     email: false,
   };
+  let accountApiReady = false;
   let currentIdentity = {
     email: "",
     providerKey: "",
@@ -1025,6 +1027,66 @@
     authMessage.textContent = message;
   }
 
+  function setAuthReadyItem(itemName, state, statusText, description) {
+    authReadinessItems.forEach((item) => {
+      if (item.dataset.authReadyItem !== itemName) {
+        return;
+      }
+
+      const status = item.querySelector("b");
+      const detail = item.querySelector("small");
+      item.dataset.readyState = state;
+      if (status) {
+        status.textContent = statusText;
+      }
+      if (detail) {
+        detail.textContent = description;
+      }
+    });
+  }
+
+  function updateAuthReadiness(methods = []) {
+    setAuthReadyItem(
+      "api",
+      accountApiReady ? "ready" : "pending",
+      accountApiReady ? "готово" : "ожидает",
+      accountApiReady ? "API панели отвечает текущим контрактом" : "Нужно развернуть свежий API на панели"
+    );
+
+    const byCode = new Map(
+      Array.isArray(methods)
+        ? methods
+            .filter((method) => method && typeof method.code === "string")
+            .map((method) => [method.code, method])
+        : []
+    );
+    const telegram = byCode.get("telegram") || {};
+    const email = byCode.get("email") || {};
+    const telegramEnabled = Boolean(telegram.enabled ?? authCapabilities.telegram);
+    const emailEnabled = Boolean(email.enabled ?? authCapabilities.email);
+
+    setAuthReadyItem(
+      "telegram",
+      telegramEnabled ? "ready" : "pending",
+      telegramEnabled ? "готово" : "скоро",
+      typeof telegram.description === "string" && telegram.description
+        ? telegram.description
+        : telegramEnabled
+          ? "Подтверждение через EfirVPN bot"
+          : "Telegram вход включится после деплоя API"
+    );
+    setAuthReadyItem(
+      "email",
+      emailEnabled ? "ready" : "pending",
+      emailEnabled ? "готово" : "скоро",
+      typeof email.description === "string" && email.description
+        ? email.description
+        : emailEnabled
+          ? "Одноразовый код на почту"
+          : "Нужны SMTP-настройки или demo-коды"
+    );
+  }
+
   function availableAuthMethodsText() {
     const enabled = [];
     if (authCapabilities.telegram) {
@@ -1073,6 +1135,8 @@
   }
 
   function explainApiDelay() {
+    accountApiReady = false;
+    updateAuthReadiness();
     setApiStatus(
       "is-warning",
       "Кабинет временно недоступен. Напишите в Telegram, мы выдадим ключ вручную."
@@ -1091,6 +1155,8 @@
 
   async function checkApiStatus() {
     setApiStatus("is-checking", "Проверяем доступность кабинета.");
+    accountApiReady = false;
+    updateAuthReadiness();
 
     try {
       const health = await apiFetch("/health");
@@ -1104,11 +1170,13 @@
         );
 
         if (!hasCurrentAccountApi) {
+          accountApiReady = false;
           authCapabilities = {
             telegram: false,
             email: false,
           };
           updateAuthAvailability();
+          updateAuthReadiness();
           setApiStatus(
             "is-warning",
             "Кабинет обновляется: сайт уже готов, но API панели еще ждёт деплой."
@@ -1116,12 +1184,14 @@
           return false;
         }
 
+        accountApiReady = true;
         authCapabilities = {
           telegram: health.telegramConfigured,
           email: Boolean(health.emailConfigured),
         };
         await refreshEventCatalog();
         updateAuthAvailability();
+        updateAuthReadiness(health.authMethods);
 
         const authText = availableAuthMethodsText();
         setApiStatus(
