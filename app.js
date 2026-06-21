@@ -41,6 +41,7 @@
   const copyButtons = document.querySelectorAll("[data-copy-sub]");
   const openHappButtons = document.querySelectorAll("[data-open-happ]");
   const rotateKeyButtons = document.querySelectorAll("[data-rotate-key]");
+  const linkTelegramButtons = document.querySelectorAll("[data-link-telegram]");
   const planUpgradeButton = document.querySelector("[data-plan-upgrade]");
   const subLink = document.querySelector("#subLink");
   const profileList = document.querySelector("[data-profile-list]");
@@ -1035,6 +1036,62 @@
       telegramLoginButton.disabled = false;
       telegramLoginButton.textContent = "Войти через Telegram";
     }
+  });
+
+  linkTelegramButtons.forEach((button) => {
+    button.addEventListener("click", async () => {
+      if (!isAuthenticated) {
+        openAuth("telegram");
+        return;
+      }
+
+      if (currentIdentity.provider === "Telegram подключен") {
+        showToast("Telegram уже подключен");
+        return;
+      }
+
+      if (!authCapabilities.telegram) {
+        setApiStatus("is-warning", "Telegram вход еще не подключен. Напишите в поддержку, если нужен ключ сейчас.");
+        return;
+      }
+
+      button.disabled = true;
+      button.textContent = "Откройте Telegram";
+
+      try {
+        const login = await apiFetch("/api/auth/telegram/request", {
+          method: "POST",
+          body: JSON.stringify({}),
+        });
+
+        setApiStatus("is-checking", "Подтвердите привязку в Telegram. Ключ останется тем же.");
+        window.open(login.botUrl, "_blank", "noopener,noreferrer");
+
+        for (let attempt = 0; attempt < 30; attempt += 1) {
+          await wait(2000);
+          const status = await apiFetch(
+            `/api/auth/telegram/status/${encodeURIComponent(login.requestToken)}`
+          );
+
+          if (status.status === "confirmed") {
+            completeApiAuth(status, "Telegram привязан к кабинету");
+            return;
+          }
+
+          if (status.status === "expired") {
+            setApiStatus("is-warning", "Ссылка устарела. Нажмите привязку еще раз.");
+            return;
+          }
+        }
+
+        setApiStatus("is-warning", "Не дождались подтверждения. Нажмите кнопку еще раз.");
+      } catch {
+        explainApiDelay();
+      } finally {
+        button.disabled = false;
+        button.textContent = "Привязать Telegram";
+      }
+    });
   });
 
   telegramStaticLink?.addEventListener("click", (event) => {
