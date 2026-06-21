@@ -43,6 +43,9 @@
   const trafficBar = document.querySelector("[data-traffic-bar]");
   const happPreviewTitle = document.querySelector("[data-happ-preview-title]");
   const happPreviewUpdated = document.querySelector("[data-happ-preview-updated]");
+  const happPreviewProfiles = document.querySelector("[data-happ-preview-profiles]");
+  const happPreviewLatency = document.querySelector("[data-happ-preview-latency]");
+  const happPreviewNetwork = document.querySelector("[data-happ-preview-network]");
   const happPreviewTraffic = document.querySelector("[data-happ-preview-traffic]");
   const happPreviewExpires = document.querySelector("[data-happ-preview-expires]");
   const happPreviewBar = document.querySelector("[data-happ-preview-bar]");
@@ -1416,6 +1419,21 @@
       happPreviewUpdated.textContent = hasAccountData
         ? happPreview.updatedText || connectionKit?.subtitle || "Автообновление подписки · Happ JSON"
         : "Автообновление профиля после входа";
+      if (happPreviewProfiles) {
+        happPreviewProfiles.textContent = hasAccountData
+          ? happPreview.profileCountText || `${currentProfiles.length || 4} профиля`
+          : "4 профиля";
+      }
+      if (happPreviewLatency) {
+        happPreviewLatency.textContent = hasAccountData
+          ? happPreview.latencyText || "Низкая задержка"
+          : "Низкая задержка";
+      }
+      if (happPreviewNetwork) {
+        happPreviewNetwork.textContent = hasAccountData
+          ? happPreview.networkText || "Helsinki + резерв"
+          : "Helsinki + резерв";
+      }
       happPreviewTraffic.textContent = hasAccountData
         ? happPreview.trafficLabel || trafficSummary || (limit > 0 ? `${usedText} GB/${limitText} GB` : `${usedText} GB/∞`)
         : "— GB/∞";
