@@ -101,6 +101,7 @@
 
   const subscriptionOverviewLines = Object.freeze([
     "🟢 Основная линия: Helsinki / Finland",
+    "↳ Сеть активна: остаток и срок обновляются в личном кабинете",
     "↳ Резервные профили помогают при нестабильной сети",
     "↳ Формат профилей: VLESS | TCP | Reality | JSON",
     "↳ Один личный ключ для Happ, v2rayN, v2rayNG и Shadowrocket",
@@ -692,6 +693,7 @@
       const title = document.createElement("strong");
       const meta = document.createElement("small");
       const status = document.createElement("b");
+      const chevron = document.createElement("em");
 
       icon.className = "flag flag--placeholder";
       row.dataset.profileKind = "placeholder";
@@ -699,9 +701,11 @@
       title.textContent = hasAccountData ? "Профили обновляются" : "Профили появятся после входа";
       meta.textContent = "VLESS | TCP | Reality | JSON";
       status.textContent = hasAccountData ? "скоро" : "готовим";
+      chevron.textContent = "›";
+      chevron.setAttribute("aria-hidden", "true");
 
       content.append(title, meta);
-      row.append(icon, content, status);
+      row.append(icon, content, status, chevron);
       profileList.append(row);
       return;
     }
@@ -713,6 +717,7 @@
       const title = document.createElement("strong");
       const meta = document.createElement("small");
       const status = document.createElement("b");
+      const chevron = document.createElement("em");
       const kind = getProfileKind(profile, index);
 
       row.dataset.profileKind = kind;
@@ -721,13 +726,15 @@
       icon.textContent = getProfileIcon(profile, index);
       title.textContent = formatProfileDisplayName(index, profile.name);
       meta.textContent = formatProfileProtocol(profile);
-      status.textContent = getProfileStatus(profile, index);
+      status.textContent = `${profile.signal || "🟢"} ${getProfileStatus(profile, index)}`;
+      chevron.textContent = profile.chevron || "›";
+      chevron.setAttribute("aria-hidden", "true");
       if (typeof profile.description === "string" && profile.description) {
         row.title = profile.description;
       }
 
       content.append(title, meta);
-      row.append(icon, content, status);
+      row.append(icon, content, status, chevron);
       profileList.append(row);
     });
   }
@@ -758,6 +765,7 @@
       const title = document.createElement("strong");
       const meta = document.createElement("small");
       const status = document.createElement("b");
+      const chevron = document.createElement("em");
       const kind = profiles.length ? getProfileKind(profile, index) : "placeholder";
 
       row.dataset.profileKind = kind;
@@ -767,13 +775,17 @@
         ? formatProfileDisplayName(index, profile.name)
         : profile.name;
       meta.textContent = formatProfileProtocol(profile);
-      status.textContent = profiles.length ? getProfileStatus(profile, index) : hasAccountData ? "скоро" : "готовим";
+      status.textContent = profiles.length
+        ? `${profile.signal || "🟢"} ${getProfileStatus(profile, index)}`
+        : hasAccountData ? "скоро" : "готовим";
+      chevron.textContent = profiles.length ? profile.chevron || "›" : "›";
+      chevron.setAttribute("aria-hidden", "true");
       if (typeof profile.description === "string" && profile.description) {
         row.title = profile.description;
       }
 
       content.append(title, meta);
-      row.append(icon, content, status);
+      row.append(icon, content, status, chevron);
       deviceProfileList.append(row);
     });
   }

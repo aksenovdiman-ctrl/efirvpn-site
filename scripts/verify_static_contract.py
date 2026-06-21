@@ -33,6 +33,7 @@ def main() -> int:
         "data-link-telegram",
         "data-link-email",
         "happ-preview-card",
+        "happ-actions",
         "data-happ-preview-traffic",
         "data-traffic-description",
         "data-profile-list",
@@ -83,6 +84,8 @@ def main() -> int:
         "currentConnectionKit",
         "getSafeHappDeepLink",
         "trafficDescriptionText",
+        "profile.signal",
+        "profile.chevron",
         "manualSpec",
         "getProfileKind",
         "getProfileIcon",
@@ -104,6 +107,7 @@ def main() -> int:
 
     for marker in (
         ".happ-preview-card",
+        ".happ-actions span",
         ".happ-preview-band",
         ".happ-mini-bar",
         ".happ-preview-note",
@@ -117,6 +121,8 @@ def main() -> int:
         '.activity-item[data-event-tone="info"]',
         '.activity-item[data-event-tone="warning"]',
         ".device-profile-list article",
+        ".server-list em",
+        ".device-profile-list em",
         '.server-list article[data-profile-kind="primary"]',
         '.server-list article[data-profile-kind="reserve"]',
         '.device-profile-list article[data-profile-kind="primary"]',

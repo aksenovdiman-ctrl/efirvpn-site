@@ -1285,11 +1285,21 @@ body.account-route main {
 }
 
 .happ-actions {
-  min-width: 106px;
+  display: inline-flex;
+  align-items: center;
   justify-content: end;
-  font-size: 24px;
-  letter-spacing: 7px;
+  gap: 14px;
+  min-width: 118px;
+  font-size: 20px;
+  letter-spacing: 0;
   white-space: nowrap;
+}
+
+.happ-actions span {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
 }
 
 .happ-preview-band {
@@ -1810,7 +1820,7 @@ body.account-route main {
 .device-profile-list article,
 .device-slot-list article {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) auto;
+  grid-template-columns: 44px minmax(0, 1fr) auto 18px;
   align-items: center;
   gap: 14px;
   min-height: 66px;
@@ -1838,6 +1848,7 @@ body.account-route main {
 }
 
 .device-slot-list article[data-device-slot="primary"] {
+  grid-template-columns: 44px minmax(0, 1fr) auto;
   border-color: rgba(53, 230, 176, 0.2);
   background:
     linear-gradient(90deg, rgba(53, 230, 176, 0.08), transparent 58%),
@@ -1845,6 +1856,7 @@ body.account-route main {
 }
 
 .device-slot-list article[data-device-slot="free"] {
+  grid-template-columns: 44px minmax(0, 1fr) auto;
   border-color: rgba(255, 255, 255, 0.1);
 }
 
@@ -1892,6 +1904,7 @@ body.account-route main {
 .device-profile-list b {
   color: var(--accent-2);
   font-size: 13px;
+  white-space: nowrap;
 }
 
 .tariffs-card {
@@ -1945,7 +1958,7 @@ body.account-route main {
 .server-list article,
 .device-row {
   display: grid;
-  grid-template-columns: 54px minmax(0, 1fr) auto;
+  grid-template-columns: 54px minmax(0, 1fr) auto 18px;
   align-items: center;
   gap: 16px;
   min-height: 76px;
@@ -2046,16 +2059,21 @@ body.account-route main {
   align-items: center;
   gap: 8px;
   color: var(--accent-2);
+  white-space: nowrap;
 }
 
 .server-list b::before {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: currentColor;
-  box-shadow: 0 0 0 0 rgba(197, 243, 91, 0.42);
-  content: "";
-  animation: onlinePulse 1700ms ease-out infinite;
+  display: none;
+  content: none;
+}
+
+.server-list em,
+.device-profile-list em {
+  color: rgba(238, 240, 255, 0.35);
+  font-size: 34px;
+  font-style: normal;
+  font-weight: 300;
+  line-height: 1;
 }
 
 .device-row {
@@ -2550,6 +2568,11 @@ body.account-route main {
     justify-content: start;
     min-width: 0;
     font-size: 19px;
+  }
+
+  .server-list em,
+  .device-profile-list em {
+    display: none;
   }
 
   .happ-preview-band {
