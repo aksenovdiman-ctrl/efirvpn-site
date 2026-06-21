@@ -411,8 +411,12 @@
         return "✉️";
       case "telegram_connected":
         return "📲";
+      case "telegram_link_started":
+        return "✈️";
       case "subscription_created":
         return "🧩";
+      case "email_link_started":
+        return "📧";
       case "auth_completed":
         return "✅";
       case "trial_created":
@@ -1098,6 +1102,7 @@
         });
 
         setApiStatus("is-checking", "Подтвердите привязку в Telegram. Ключ останется тем же.");
+        emitAccountEvent("telegram_link_started", "Привязка Telegram", "Открыта ссылка подтверждения Telegram для текущего ключа.");
         window.open(login.botUrl, "_blank", "noopener,noreferrer");
 
         for (let attempt = 0; attempt < 30; attempt += 1) {
@@ -1147,6 +1152,7 @@
       pendingAccountTab = "overview";
       openAuth("email");
       setApiStatus("is-checking", "Введите Email: код привяжет почту к текущему ключу.");
+      emitAccountEvent("email_link_started", "Привязка Email", "Открыта форма привязки Email к текущему ключу.");
     });
   });
 
@@ -1226,7 +1232,7 @@
       emitAccountEvent(
         "subscription_link_copied",
         "Попытка скопировать ссылку",
-        "Копирование в буфер прошло без API/брaузерного разрешения."
+        "Копирование в буфер прошло без API/браузерного разрешения."
       );
       showToast("Скопируйте ссылку вручную");
     }
