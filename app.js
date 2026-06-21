@@ -54,6 +54,7 @@
   const profileList = document.querySelector("[data-profile-list]");
   const deviceProfileList = document.querySelector("[data-device-profile-list]");
   const deviceSlotList = document.querySelector("[data-device-slot-list]");
+  const happGuideList = document.querySelector("[data-happ-guide-list]");
   const manualSubscriptionLink = document.querySelector("[data-manual-subscription-link]");
   const manualExpires = document.querySelector("[data-manual-expires]");
   const manualTraffic = document.querySelector("[data-manual-traffic]");
@@ -101,6 +102,23 @@
     "Efir Reserve 3 · низкая задержка",
   ]);
   const defaultDeviceLimit = 5;
+  const fallbackHappGuideSteps = Object.freeze([
+    {
+      step: 1,
+      title: "Установите Happ",
+      description: "Откройте приложение и держите личный кабинет EfirVPN рядом.",
+    },
+    {
+      step: 2,
+      title: "Откройте личный ключ",
+      description: "Нажмите «Открыть в Happ» или скопируйте subscription link вручную.",
+    },
+    {
+      step: 3,
+      title: "Обновите подписку",
+      description: "В Happ появится профиль EfirVPN с основной линией Helsinki.",
+    },
+  ]);
 
   const subscriptionOverviewLines = Object.freeze([
     "🟢 Основная линия: Helsinki / Finland",
@@ -898,6 +916,38 @@
     });
   }
 
+  function renderHappGuideSteps(hasAccountData) {
+    if (!happGuideList) {
+      return;
+    }
+
+    const sourceSteps =
+      hasAccountData && Array.isArray(currentConnectionKit?.happGuideSteps)
+        ? currentConnectionKit.happGuideSteps
+        : fallbackHappGuideSteps;
+    const steps = sourceSteps.length ? sourceSteps : fallbackHappGuideSteps;
+
+    happGuideList.replaceChildren();
+    steps.forEach((step, index) => {
+      const row = document.createElement("article");
+      const marker = document.createElement("b");
+      const body = document.createElement("div");
+      const title = document.createElement("strong");
+      const description = document.createElement("p");
+
+      marker.textContent = String(Number(step.step) || index + 1);
+      title.textContent = typeof step.title === "string" && step.title ? step.title : `Шаг ${index + 1}`;
+      description.textContent =
+        typeof step.description === "string" && step.description
+          ? step.description
+          : "Следуйте подсказке в личном кабинете EfirVPN.";
+
+      body.append(title, description);
+      row.append(marker, body);
+      happGuideList.append(row);
+    });
+  }
+
   function isValidEmail(value) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
   }
@@ -1255,6 +1305,7 @@
     renderProfileList(hasAccountData);
     renderDeviceProfileList(hasAccountData);
     renderDeviceSlotList(hasAccountData);
+    renderHappGuideSteps(hasAccountData);
     renderActivityLog();
   }
 

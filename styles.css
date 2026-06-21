@@ -1719,16 +1719,45 @@ body.account-route main {
 
 .guide-list {
   display: grid;
-  gap: 12px;
+  gap: 10px;
   margin-top: 18px;
 }
 
-.guide-list p {
-  margin: 0;
+.guide-list article {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  min-height: 72px;
   padding: 14px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--radius);
   background: #1d1d23;
+}
+
+.guide-list b {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(53, 230, 176, 0.12);
+  color: var(--accent);
+  font-size: 14px;
+}
+
+.guide-list strong,
+.guide-list p {
+  display: block;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.guide-list p {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.35;
 }
 
 .connection-kit-card {
