@@ -56,6 +56,7 @@
   const planUpgradeButton = document.querySelector("[data-plan-upgrade]");
   const subLink = document.querySelector("#subLink");
   const profileList = document.querySelector("[data-profile-list]");
+  const profileReadiness = document.querySelector("[data-profile-readiness]");
   const deviceProfileList = document.querySelector("[data-device-profile-list]");
   const deviceSlotList = document.querySelector("[data-device-slot-list]");
   const happGuideList = document.querySelector("[data-happ-guide-list]");
@@ -841,6 +842,21 @@
     }
 
     profileList.replaceChildren();
+    if (profileReadiness) {
+      const readiness = currentConnectionKit?.profileReadiness || {};
+      const expectedProfiles = Array.isArray(currentConnectionKit?.expectedProfiles)
+        ? currentConnectionKit.expectedProfiles
+        : [];
+      if (hasAccountData && readiness.label) {
+        const loaded = Number(readiness.loadedCount) || 0;
+        const expected = Number(readiness.expectedCount) || expectedProfiles.length || 4;
+        profileReadiness.textContent = `${readiness.label}: ${loaded}/${expected}. ${readiness.description || ""}`.trim();
+      } else {
+        profileReadiness.textContent = hasAccountData
+          ? "Проверяем профиль подписки и ожидаемый вид Happ."
+          : "Helsinki и резервные линии в одной подписке.";
+      }
+    }
 
     const profiles = hasAccountData ? currentProfiles : [];
     if (!profiles.length) {
