@@ -56,6 +56,10 @@
   const manualSubscriptionLink = document.querySelector("[data-manual-subscription-link]");
   const manualExpires = document.querySelector("[data-manual-expires]");
   const manualTraffic = document.querySelector("[data-manual-traffic]");
+  const manualProtocol = document.querySelector("[data-manual-protocol]");
+  const manualTransport = document.querySelector("[data-manual-transport]");
+  const manualSecurity = document.querySelector("[data-manual-security]");
+  const manualFormat = document.querySelector("[data-manual-format]");
   const connectStatus = document.querySelector("[data-connect-status]");
   const connectCode = document.querySelector("[data-connect-code]");
   const activityList = document.querySelector("[data-activity-list]");
@@ -903,6 +907,7 @@
     const descriptionLines = Array.isArray(connectionKit?.descriptionLines)
       ? connectionKit.descriptionLines
       : [];
+    const manualSpec = connectionKit?.manualSpec || {};
 
     if (accountUser) {
       accountUser.textContent = currentIdentity.username || "Аккаунт";
@@ -1040,6 +1045,22 @@
       manualTraffic.textContent = hasAccountData
         ? remainingText || (limit > 0 ? `${leftText} ГБ осталось` : `${usedText} ГБ использовано`)
         : "—";
+    }
+
+    if (manualProtocol) {
+      manualProtocol.textContent = hasAccountData ? manualSpec.protocol || "VLESS" : "VLESS";
+    }
+
+    if (manualTransport) {
+      manualTransport.textContent = hasAccountData ? manualSpec.transport || "TCP" : "TCP";
+    }
+
+    if (manualSecurity) {
+      manualSecurity.textContent = hasAccountData ? manualSpec.security || "Reality" : "Reality";
+    }
+
+    if (manualFormat) {
+      manualFormat.textContent = hasAccountData ? manualSpec.format || "JSON" : "JSON";
     }
 
     applyStatusBadge(connectStatus, hasAccountData, hasAccountData ? "Готов к импорту" : "Ключ ожидает входа");

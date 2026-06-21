@@ -39,6 +39,10 @@ def main() -> int:
         "data-device-profile-list",
         "data-connect-code",
         "data-manual-subscription-link",
+        "data-manual-protocol",
+        "data-manual-transport",
+        "data-manual-security",
+        "data-manual-format",
         "data-activity-list",
     ):
         require("index", index, marker)
@@ -60,6 +64,7 @@ def main() -> int:
         "/api/account/connect",
         "currentConnectionKit",
         "getSafeHappDeepLink",
+        "manualSpec",
         "Efir Helsinki · Основной",
         "Efir Reserve 1 · резервная линия",
         "Efir Reserve 2 · стабильная сеть",
