@@ -433,6 +433,7 @@
       case "key_rotated":
         return "♻️";
       case "payment_started":
+      case "tariff_selected":
         return "💳";
       case "support_started":
         return "🧑‍💼";

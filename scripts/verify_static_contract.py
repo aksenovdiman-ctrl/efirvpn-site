@@ -50,6 +50,7 @@ def main() -> int:
         "email_link_started",
         "subscription_link_copied",
         "happ_open_clicked",
+        "tariff_selected",
         "Efir Helsinki · Основной",
         "Efir Reserve 1 · резервная линия",
         "Efir Reserve 2 · стабильная сеть",
