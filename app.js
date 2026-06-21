@@ -73,6 +73,7 @@
   const activityEmpty = document.querySelector("[data-activity-empty]");
   const activitySummary = document.querySelector("[data-activity-summary]");
   const activityFilters = document.querySelectorAll("[data-activity-filter]");
+  const activityRefreshButton = document.querySelector("[data-refresh-activity]");
   const paymentStatus = document.querySelector("[data-payment-status]");
   const toast = document.querySelector("#toast");
   const planButtons = document.querySelectorAll("[data-plan]");
@@ -167,6 +168,7 @@
   let currentEvents = [];
   let eventMetaCatalog = { ...fallbackEventMeta };
   let activityFilter = "all";
+  let activityRefreshLoading = false;
   let currentConnectionKit = null;
   let hasOpenedSessionLog = false;
   let pendingSessionEvents = [];
@@ -726,6 +728,38 @@
     addLocalEvent(eventType, title, details);
   }
 
+  function updateActivityRefreshButton() {
+    if (!activityRefreshButton) {
+      return;
+    }
+
+    activityRefreshButton.disabled = activityRefreshLoading || !isAuthenticated || !apiSessionToken;
+    activityRefreshButton.textContent = activityRefreshLoading ? "Обновляем" : "Обновить";
+  }
+
+  async function refreshActivityLog() {
+    if (!apiSessionToken) {
+      renderActivityLog();
+      return false;
+    }
+
+    activityRefreshLoading = true;
+    updateActivityRefreshButton();
+
+    try {
+      const payload = await apiFetch("/api/events");
+      currentEvents = Array.isArray(payload.events) ? payload.events.map(normalizeEvent) : [];
+      renderActivityLog();
+      return true;
+    } catch {
+      renderActivityLog();
+      return false;
+    } finally {
+      activityRefreshLoading = false;
+      updateActivityRefreshButton();
+    }
+  }
+
   function getActivityCounts(events = currentEvents) {
     const counts = {
       all: events.length,
@@ -768,6 +802,7 @@
 
     activityList.replaceChildren();
     updateActivityFilters();
+    updateActivityRefreshButton();
 
     if (!isAuthenticated) {
       activityList.hidden = true;
@@ -1706,6 +1741,16 @@
       activityFilter = nextFilter;
       renderActivityLog();
     });
+  });
+
+  activityRefreshButton?.addEventListener("click", async () => {
+    if (!isAuthenticated) {
+      openAuth("telegram");
+      return;
+    }
+
+    const refreshed = await refreshActivityLog();
+    showToast(refreshed ? "Журнал обновлен" : "Не удалось обновить журнал");
   });
 
   authMethods.forEach((method) => {

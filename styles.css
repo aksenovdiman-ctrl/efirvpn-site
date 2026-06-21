@@ -1558,6 +1558,25 @@ body.account-route main {
   margin: 4px 0 14px;
 }
 
+.activity-refresh-button {
+  min-height: 34px;
+  margin-left: auto;
+  padding: 0 12px;
+  border: 1px solid rgba(53, 230, 176, 0.18);
+  border-radius: 999px;
+  background: rgba(53, 230, 176, 0.08);
+  color: var(--accent);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.activity-refresh-button:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
 .activity-filters button {
   min-height: 34px;
   padding: 0 12px;
