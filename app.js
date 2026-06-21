@@ -958,6 +958,8 @@
     const trafficSummary = typeof kitTraffic.summary === "string" ? kitTraffic.summary : "";
     const remainingText =
       typeof kitTraffic.remainingText === "string" ? kitTraffic.remainingText : "";
+    const trafficDescriptionText =
+      typeof kitTraffic.description === "string" ? kitTraffic.description : "";
     const descriptionLines = Array.isArray(connectionKit?.descriptionLines)
       ? connectionKit.descriptionLines
       : [];
@@ -1055,12 +1057,13 @@
 
       if (trafficDescription) {
         if (hasAccountData) {
-          const remainingLine =
-            remainingText
+          const remainingLine = trafficDescriptionText
+            ? `↳ ${trafficDescriptionText}`
+            : remainingText
               ? `↳ ${remainingText}`
               : limit > 0
                 ? `↳ Остаток: ${leftText} ГБ из ${limitText} ГБ`
-              : "↳ Безлимитный пакет, остаток неограничен";
+                : "↳ Безлимитный пакет, остаток неограничен";
 
           const overviewLines = descriptionLines.length
             ? descriptionLines.map((line) => `↳ ${line.replace(/^↳\s*/, "").replace(/^🟢\s*/, "")}`)

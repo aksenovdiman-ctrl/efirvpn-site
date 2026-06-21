@@ -71,6 +71,7 @@ def main() -> int:
         "/api/account/connect",
         "currentConnectionKit",
         "getSafeHappDeepLink",
+        "trafficDescriptionText",
         "manualSpec",
         "getProfileKind",
         "getProfileIcon",
