@@ -26,6 +26,7 @@
   const accountEmail = document.querySelector("[data-account-email]");
   const accountDevicesUsed = document.querySelector("[data-account-devices-used]");
   const accountDeviceLimit = document.querySelector("[data-account-device-limit]");
+  const deviceSummary = document.querySelector("[data-device-summary]");
   const accountDaysLeft = document.querySelector("[data-account-days-left]");
   const accountExpires = document.querySelector("[data-account-expires]");
   const accountStatusBadge = document.querySelector("[data-account-status-badge]");
@@ -916,6 +917,22 @@
     });
   }
 
+  function getDeviceUsedCount(hasAccountData) {
+    if (!hasAccountData) {
+      return 0;
+    }
+
+    const explicitCount = Number(currentConnectionKit?.deviceUsed);
+    if (Number.isFinite(explicitCount) && explicitCount >= 0) {
+      return explicitCount;
+    }
+
+    const slots = Array.isArray(currentConnectionKit?.deviceSlots)
+      ? currentConnectionKit.deviceSlots
+      : [];
+    return slots.filter((slot) => !["свободно", "ожидает"].includes(String(slot.status || ""))).length;
+  }
+
   function renderHappGuideSteps(hasAccountData) {
     if (!happGuideList) {
       return;
@@ -1176,8 +1193,14 @@
     }
 
     if (accountDevicesUsed && accountDeviceLimit) {
-      accountDevicesUsed.textContent = hasAccountData ? "0" : "—";
+      accountDevicesUsed.textContent = hasAccountData ? String(getDeviceUsedCount(hasAccountData)) : "—";
       accountDeviceLimit.textContent = ` / ${deviceLimit}`;
+    }
+
+    if (deviceSummary) {
+      deviceSummary.textContent = hasAccountData
+        ? currentConnectionKit?.deviceSummaryText || `${getDeviceUsedCount(hasAccountData)} из ${deviceLimit} слотов готово`
+        : "Один ключ можно использовать на личных устройствах без повторной настройки.";
     }
 
     if (happPreviewTitle && happPreviewUpdated && happPreviewTraffic && happPreviewExpires && happPreviewBar && happPreviewNote) {
