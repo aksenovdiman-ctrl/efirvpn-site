@@ -59,7 +59,7 @@
   const allowedPlans = new Set(["1 месяц", "3 месяца", "6 месяцев", "12 месяцев"]);
   const allowedAuthMethods = new Set(["telegram", "email"]);
   const allowedSubscriptionHost = "panel.efirvpn.ru";
-  const apiBase = "/backend";
+  const apiBase = "https://panel.efirvpn.ru/efir-api";
   const subscriptionBase = "https://panel.efirvpn.ru/api/sub";
   const storageKey = "efirvpn.account.v1";
   const sessionStorageKey = "efirvpn.session.v1";

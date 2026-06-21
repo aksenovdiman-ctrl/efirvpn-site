@@ -1,8 +1,0 @@
-{
-  "rewrites": [
-    {
-      "source": "/backend/:path*",
-      "destination": "https://panel.efirvpn.ru/efir-api/:path*"
-    }
-  ]
-}
