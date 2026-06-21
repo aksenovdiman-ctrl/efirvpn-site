@@ -65,6 +65,8 @@
   const connectCode = document.querySelector("[data-connect-code]");
   const activityList = document.querySelector("[data-activity-list]");
   const activityEmpty = document.querySelector("[data-activity-empty]");
+  const activitySummary = document.querySelector("[data-activity-summary]");
+  const activityFilters = document.querySelectorAll("[data-activity-filter]");
   const paymentStatus = document.querySelector("[data-payment-status]");
   const toast = document.querySelector("#toast");
   const planButtons = document.querySelectorAll("[data-plan]");
@@ -85,6 +87,7 @@
     "12 месяцев": "month_12",
   });
   const allowedAuthMethods = new Set(["telegram", "email"]);
+  const allowedActivityGroups = new Set(["all", "account", "auth", "connection", "payment", "support"]);
   const allowedSubscriptionHost = "panel.efirvpn.ru";
   const apiBase = "https://panel.efirvpn.ru/efir-api";
   const subscriptionBase = "https://panel.efirvpn.ru/api/sub";
@@ -140,6 +143,7 @@
   let currentProfiles = [];
   let currentEvents = [];
   let eventMetaCatalog = { ...fallbackEventMeta };
+  let activityFilter = "all";
   let currentConnectionKit = null;
   let hasOpenedSessionLog = false;
   let pendingSessionEvents = [];
@@ -629,17 +633,56 @@
     addLocalEvent(eventType, title, details);
   }
 
+  function getActivityCounts(events = currentEvents) {
+    const counts = {
+      all: events.length,
+      account: 0,
+      auth: 0,
+      connection: 0,
+      payment: 0,
+      support: 0,
+    };
+
+    events.forEach((event) => {
+      const group = getEventMeta(event.eventType).group;
+      if (Object.prototype.hasOwnProperty.call(counts, group)) {
+        counts[group] += 1;
+      }
+    });
+
+    return counts;
+  }
+
+  function updateActivityFilters() {
+    const counts = getActivityCounts();
+    activityFilters.forEach((button) => {
+      const group = allowedActivityGroups.has(button.dataset.activityFilter)
+        ? button.dataset.activityFilter
+        : "all";
+      const baseLabel = button.dataset.activityLabel || button.textContent.replace(/\s+\d+$/, "").trim();
+
+      button.dataset.activityLabel = baseLabel;
+      button.textContent = `${baseLabel} ${counts[group] || 0}`;
+      button.classList.toggle("active", group === activityFilter);
+      button.disabled = !isAuthenticated || currentEvents.length === 0;
+    });
+  }
+
   function renderActivityLog() {
     if (!activityList || !activityEmpty) {
       return;
     }
 
     activityList.replaceChildren();
+    updateActivityFilters();
 
     if (!isAuthenticated) {
       activityList.hidden = true;
       activityEmpty.hidden = false;
       activityEmpty.textContent = "Войдите, чтобы увидеть историю.";
+      if (activitySummary) {
+        activitySummary.textContent = "Входы, ключи, Happ и платежные действия в одном журнале.";
+      }
       return;
     }
 
@@ -647,13 +690,35 @@
       activityList.hidden = true;
       activityEmpty.hidden = false;
       activityEmpty.textContent = "Журнал пока пустой.";
+      if (activitySummary) {
+        activitySummary.textContent = "События появятся после входа, копирования ключа, открытия Happ или выбора тарифа.";
+      }
+      return;
+    }
+
+    const visibleEvents = currentEvents.filter((event) => {
+      if (activityFilter === "all") {
+        return true;
+      }
+
+      return getEventMeta(event.eventType).group === activityFilter;
+    });
+    const counts = getActivityCounts();
+    if (activitySummary) {
+      activitySummary.textContent = `Всего событий: ${counts.all}. Вход: ${counts.auth}, ключ: ${counts.connection}, оплата: ${counts.payment}.`;
+    }
+
+    if (!visibleEvents.length) {
+      activityList.hidden = true;
+      activityEmpty.hidden = false;
+      activityEmpty.textContent = "В этом разделе пока нет событий.";
       return;
     }
 
     activityList.hidden = false;
     activityEmpty.hidden = true;
 
-    currentEvents.forEach((event) => {
+    visibleEvents.forEach((event) => {
       const item = document.createElement("article");
       const icon = document.createElement("span");
       const body = document.createElement("div");
@@ -1380,6 +1445,16 @@
 
   tabs.forEach((tab) => {
     tab.addEventListener("click", () => setTab(tab.dataset.tab));
+  });
+
+  activityFilters.forEach((button) => {
+    button.addEventListener("click", () => {
+      const nextFilter = allowedActivityGroups.has(button.dataset.activityFilter)
+        ? button.dataset.activityFilter
+        : "all";
+      activityFilter = nextFilter;
+      renderActivityLog();
+    });
   });
 
   authMethods.forEach((method) => {

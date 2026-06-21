@@ -451,8 +451,15 @@
                 <span class="dash-icon">🧾</span>
                 <div>
                   <h3>Журнал активности</h3>
-                  <p>Что происходило с вашим доступом в последний час.</p>
+                  <p data-activity-summary>Входы, ключи, Happ и платежные действия в одном журнале.</p>
                 </div>
+              </div>
+              <div class="activity-filters" aria-label="Фильтр журнала активности">
+                <button class="active" type="button" data-activity-filter="all">Все</button>
+                <button type="button" data-activity-filter="auth">Вход</button>
+                <button type="button" data-activity-filter="connection">Ключ</button>
+                <button type="button" data-activity-filter="payment">Оплата</button>
+                <button type="button" data-activity-filter="support">Поддержка</button>
               </div>
               <div class="activity-list" data-activity-list></div>
               <p class="activity-empty" data-activity-empty>Войдите, чтобы увидеть историю.</p>

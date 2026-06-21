@@ -48,6 +48,8 @@ def main() -> int:
         "data-manual-transport",
         "data-manual-security",
         "data-manual-format",
+        "data-activity-summary",
+        'data-activity-filter="payment"',
         "data-activity-list",
     ):
         require("index", index, marker)
@@ -67,6 +69,10 @@ def main() -> int:
         "/api/events/types",
         "dataset.eventTone",
         "dataset.eventGroup",
+        "allowedActivityGroups",
+        "activityFilter",
+        "getActivityCounts",
+        "updateActivityFilters",
         "subscription_link_copied",
         "happ_open_clicked",
         "tariff_selected",
@@ -113,6 +119,8 @@ def main() -> int:
         ".happ-preview-note",
         ".connection-kit-card",
         ".connection-code-grid",
+        ".activity-filters",
+        ".activity-filters button.active",
         ".device-slot-list",
         ".device-slot-list article",
         '.device-slot-list article[data-device-slot="primary"]',
