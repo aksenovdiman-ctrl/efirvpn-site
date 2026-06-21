@@ -173,6 +173,7 @@
   let activityFilter = "all";
   let activityRefreshLoading = false;
   let currentConnectionKit = null;
+  let happManifest = {};
   let hasOpenedSessionLog = false;
   let pendingSessionEvents = [];
   let authCapabilities = {
@@ -297,7 +298,8 @@
       return safeName;
     }
 
-    return profileNames[index] || `Efir Reserve ${index + 1} · резервный профиль`;
+    const manifestProfile = getHappManifestProfiles()[index];
+    return manifestProfile?.name || profileNames[index] || `Efir Reserve ${index + 1} · резервный профиль`;
   }
 
   function loadStoredAccount() {
@@ -589,7 +591,27 @@
 
   function getHappPreview() {
     const preview = currentConnectionKit?.happPreview;
-    return preview && typeof preview === "object" ? preview : {};
+    if (preview && typeof preview === "object") {
+      return preview;
+    }
+
+    return happManifest.happPreview && typeof happManifest.happPreview === "object"
+      ? happManifest.happPreview
+      : {};
+  }
+
+  function getHappManifestProfiles() {
+    return Array.isArray(happManifest.expectedProfiles) ? happManifest.expectedProfiles : [];
+  }
+
+  function getHappManifestGuideSteps() {
+    return Array.isArray(happManifest.happGuideSteps) ? happManifest.happGuideSteps : [];
+  }
+
+  function getHappManifestDescriptionLines() {
+    return Array.isArray(happManifest.descriptionLines) && happManifest.descriptionLines.length
+      ? happManifest.descriptionLines
+      : subscriptionOverviewLines;
   }
 
   function cleanPreviewLine(line) {
@@ -613,7 +635,7 @@
       ? preview.noteLines
       : descriptionLines.length
         ? descriptionLines
-        : subscriptionOverviewLines;
+        : getHappManifestDescriptionLines();
 
     return `${statusLine}\n${noteLines.map((line) => `↳ ${cleanPreviewLine(line)}`).join("\n")}`;
   }
@@ -897,7 +919,9 @@
     }
 
     const profiles = hasAccountData ? currentProfiles : [];
-    if (!profiles.length) {
+    const manifestProfiles = getHappManifestProfiles();
+    const rows = profiles.length ? profiles : manifestProfiles;
+    if (!rows.length) {
       const row = document.createElement("article");
       const icon = document.createElement("span");
       const content = document.createElement("div");
@@ -921,7 +945,7 @@
       return;
     }
 
-    profiles.forEach((profile, index) => {
+    rows.forEach((profile, index) => {
       const row = document.createElement("article");
       const icon = document.createElement("span");
       const content = document.createElement("div");
@@ -956,7 +980,7 @@
     }
 
     deviceProfileList.replaceChildren();
-    const profiles = hasAccountData ? currentProfiles : [];
+    const profiles = hasAccountData ? currentProfiles : getHappManifestProfiles();
     const rows = profiles.length
       ? profiles
       : [
@@ -1068,7 +1092,7 @@
     const sourceSteps =
       hasAccountData && Array.isArray(currentConnectionKit?.happGuideSteps)
         ? currentConnectionKit.happGuideSteps
-        : fallbackHappGuideSteps;
+        : getHappManifestGuideSteps();
     const steps = sourceSteps.length ? sourceSteps : fallbackHappGuideSteps;
 
     happGuideList.replaceChildren();
@@ -1238,6 +1262,35 @@
     }
   }
 
+  function applyHappManifest(payload) {
+    if (!payload || payload.ok !== true || !Array.isArray(payload.expectedProfiles)) {
+      return false;
+    }
+
+    happManifest = {
+      title: typeof payload.title === "string" ? payload.title : "",
+      subtitle: typeof payload.subtitle === "string" ? payload.subtitle : "",
+      happPreview: payload.happPreview && typeof payload.happPreview === "object" ? payload.happPreview : {},
+      descriptionLines: Array.isArray(payload.descriptionLines) ? payload.descriptionLines : [],
+      happGuideSteps: Array.isArray(payload.happGuideSteps) ? payload.happGuideSteps : [],
+      expectedProfiles: payload.expectedProfiles,
+      manualSpec: payload.manualSpec && typeof payload.manualSpec === "object" ? payload.manualSpec : {},
+    };
+    return true;
+  }
+
+  async function refreshHappManifest() {
+    try {
+      const payload = await apiFetch("/api/happ/manifest");
+      if (applyHappManifest(payload)) {
+        updateAccountIdentity();
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   async function checkApiStatus() {
     setApiStatus("is-checking", "Проверяем доступность кабинета.");
     accountApiReady = false;
@@ -1246,6 +1299,7 @@
     try {
       const health = await apiFetch("/health");
       if (health?.ok || health?.status === "ok") {
+        await refreshHappManifest();
         const hasCurrentAccountApi = Boolean(
           health.apiVersion &&
             health.apiBuild &&
@@ -1498,7 +1552,7 @@
 
           const overviewLines = descriptionLines.length
             ? descriptionLines.map((line) => `↳ ${line.replace(/^↳\s*/, "").replace(/^🟢\s*/, "")}`)
-            : subscriptionOverviewLines;
+            : getHappManifestDescriptionLines();
 
           trafficDescription.textContent = `${remainingLine}\n${overviewLines.join("\n")}`;
         } else {
@@ -2162,6 +2216,7 @@
   });
 
   loadStoredAccount();
+  refreshHappManifest().catch(() => {});
   checkApiStatus();
 
   if (isAuthenticated) {
