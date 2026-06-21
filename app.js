@@ -167,7 +167,11 @@
 
   function formatProfileDisplayName(index, profileName) {
     const safeName = typeof profileName === "string" ? profileName.trim() : "";
-    if (safeName) {
+    const blockedFragments = ["germany", "запасная", "запасной", "обход", "глуш"];
+    const hasBlockedFragment = blockedFragments.some((fragment) =>
+      safeName.toLowerCase().includes(fragment),
+    );
+    if (safeName && !hasBlockedFragment) {
       return safeName;
     }
 
