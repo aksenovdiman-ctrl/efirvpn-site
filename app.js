@@ -669,8 +669,29 @@
     try {
       const health = await apiFetch("/health");
       if (health?.ok || health?.status === "ok") {
+        const hasCurrentAccountApi = Boolean(
+          health.apiVersion &&
+            health.apiBuild &&
+            health.auth &&
+            typeof health.telegramConfigured === "boolean" &&
+            typeof health.emailConfigured === "boolean"
+        );
+
+        if (!hasCurrentAccountApi) {
+          authCapabilities = {
+            telegram: false,
+            email: false,
+          };
+          updateAuthAvailability();
+          setApiStatus(
+            "is-warning",
+            "Кабинет обновляется: сайт уже готов, но API панели еще ждёт деплой."
+          );
+          return false;
+        }
+
         authCapabilities = {
-          telegram: typeof health.telegramConfigured === "boolean" ? health.telegramConfigured : true,
+          telegram: health.telegramConfigured,
           email: Boolean(health.emailConfigured),
         };
         updateAuthAvailability();
@@ -868,7 +889,12 @@
   function setAuthMethod(methodName) {
     const safeMethod = getSafeAuthMethod(methodName);
     if (!isAuthMethodAvailable(safeMethod)) {
-      setApiStatus("is-warning", `${safeMethod === "email" ? "Email" : "Telegram"} вход еще не подключен.`);
+      setApiStatus(
+        "is-warning",
+        !authCapabilities.telegram && !authCapabilities.email
+          ? "Кабинет обновляется: сайт уже готов, но API панели еще ждёт деплой."
+          : `${safeMethod === "email" ? "Email" : "Telegram"} вход еще не подключен.`
+      );
       return;
     }
 
