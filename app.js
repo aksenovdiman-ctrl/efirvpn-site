@@ -16,6 +16,7 @@
   const codeBox = document.querySelector("[data-code-box]");
   const confirmCodeButton = document.querySelector("[data-confirm-code]");
   const authMessage = document.querySelector("[data-auth-message]");
+  const apiStatus = document.querySelector("[data-api-status]");
   const telegramLoginButton = document.querySelector("[data-telegram-login]");
   const accountTitle = document.querySelector("[data-account-title]");
   const accountUser = document.querySelector("[data-account-user]");
@@ -231,6 +232,40 @@
     });
   }
 
+  function setApiStatus(state, message) {
+    if (!apiStatus || !authMessage) {
+      return;
+    }
+
+    apiStatus.classList.remove("is-ready", "is-warning", "is-checking");
+    apiStatus.classList.add(state);
+    authMessage.textContent = message;
+  }
+
+  function explainApiDelay() {
+    setApiStatus(
+      "is-warning",
+      "Кабинет временно недоступен. Напишите в Telegram, мы выдадим ключ вручную."
+    );
+  }
+
+  async function checkApiStatus() {
+    setApiStatus("is-checking", "Проверяем доступность кабинета.");
+
+    try {
+      const health = await apiFetch("/health");
+      if (health?.ok || health?.status === "ok") {
+        setApiStatus("is-ready", "Кабинет готов: можно войти через Telegram или email.");
+        return true;
+      }
+    } catch {
+      // The public API domain can temporarily point at the panel while deployment is being routed.
+    }
+
+    explainApiDelay();
+    return false;
+  }
+
   function openAuth(method = "telegram") {
     if (!authDialog || typeof authDialog.showModal !== "function") {
       return;
@@ -325,6 +360,7 @@
     applyApiAccount(data.account, data.token);
     updateAccountIdentity();
     saveStoredAccount();
+    setApiStatus("is-ready", "Кабинет готов: ключ и срок подписки обновлены.");
 
     if (authLabel) {
       authLabel.textContent = "Кабинет";
@@ -469,7 +505,10 @@
         body: JSON.stringify({}),
       });
 
-      authMessage.textContent = "Подтвердите вход в Telegram. Кабинет откроется автоматически.";
+      setApiStatus(
+        "is-checking",
+        "Подтвердите вход в Telegram. Кабинет откроется автоматически."
+      );
       window.open(login.botUrl, "_blank", "noopener,noreferrer");
 
       for (let attempt = 0; attempt < 30; attempt += 1) {
@@ -484,15 +523,14 @@
         }
 
         if (status.status === "expired") {
-          authMessage.textContent = "Ссылка устарела. Нажмите вход через Telegram еще раз.";
+          setApiStatus("is-warning", "Ссылка устарела. Нажмите вход через Telegram еще раз.");
           return;
         }
       }
 
-      authMessage.textContent = "Не дождались подтверждения. Нажмите кнопку еще раз.";
+      setApiStatus("is-warning", "Не дождались подтверждения. Нажмите кнопку еще раз.");
     } catch {
-      authMessage.textContent =
-        "API пока недоступен. Попробуйте позже или напишите в поддержку.";
+      explainApiDelay();
     } finally {
       telegramLoginButton.disabled = false;
       telegramLoginButton.textContent = "Войти через Telegram";
@@ -506,7 +544,7 @@
     const email = String(formData.get("email") || "").trim().toLowerCase();
 
     if (!isValidEmail(email)) {
-      authMessage.textContent = "Введите корректную почту.";
+      setApiStatus("is-warning", "Введите корректную почту.");
       return;
     }
 
@@ -519,10 +557,12 @@
         method: "POST",
         body: JSON.stringify({ email }),
       });
-      authMessage.textContent = data.ok ? "Код отправлен на почту." : "Повторите попытку позже.";
+      setApiStatus(
+        data.ok ? "is-ready" : "is-warning",
+        data.ok ? "Код отправлен на почту." : "Повторите попытку позже."
+      );
     } catch {
-      authMessage.textContent =
-        "API пока недоступен. Попробуйте позже или напишите в поддержку.";
+      explainApiDelay();
     }
   });
 
@@ -531,7 +571,7 @@
     const code = String(codeInput?.value || "").trim();
 
     if (!pendingEmail) {
-      authMessage.textContent = "Сначала укажите почту.";
+      setApiStatus("is-warning", "Сначала укажите почту.");
       return;
     }
 
@@ -543,7 +583,7 @@
       completeApiAuth(data, "Вход по email выполнен");
       return;
     } catch {
-      authMessage.textContent = "Неверный код или API временно недоступен.";
+      setApiStatus("is-warning", "Неверный код или кабинет временно недоступен.");
       return;
     }
   });
@@ -620,9 +660,13 @@
   });
 
   loadStoredAccount();
+  checkApiStatus();
+
   if (isAuthenticated) {
     updateAccountIdentity();
-    refreshApiAccount().catch(() => {});
+    refreshApiAccount().catch(() => {
+      explainApiDelay();
+    });
     if (authLabel) {
       authLabel.textContent = "Кабинет";
     }

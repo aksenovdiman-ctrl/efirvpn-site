@@ -168,6 +168,11 @@
           <button class="auth-method" type="button" data-auth-method="email">Email</button>
         </div>
 
+        <div class="auth-status is-checking" data-api-status>
+          <span></span>
+          <p data-auth-message>Проверяем доступность кабинета.</p>
+        </div>
+
         <div class="auth-panel active" data-auth-panel="telegram">
           <p>
             Войдите через Telegram-бота. Бот подтвердит ваш аккаунт и вернет вас в
@@ -214,9 +219,7 @@
             </label>
             <button class="auth-secondary" type="button" data-confirm-code>Войти</button>
           </div>
-          <p class="auth-note" data-auth-message>
-            Мы отправим одноразовый код. Пароль не нужен.
-          </p>
+          <p class="auth-note">Мы отправим одноразовый код. Пароль не нужен.</p>
         </form>
       </div>
     </dialog>
