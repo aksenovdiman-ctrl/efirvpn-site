@@ -2006,6 +2006,67 @@ body.account-route main {
   line-height: 1.2;
 }
 
+.connection-receipt {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid rgba(53, 230, 176, 0.14);
+  border-radius: var(--radius);
+  background: rgba(53, 230, 176, 0.055);
+}
+
+.connection-receipt > div:first-child p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.connection-receipt-list {
+  display: grid;
+  gap: 8px;
+}
+
+.connection-receipt-list article {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.connection-receipt-list article > span {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(53, 230, 176, 0.14);
+  color: var(--accent);
+  font-weight: 950;
+}
+
+.connection-receipt-list article[data-receipt-state="waiting"] > span,
+.connection-receipt-list article[data-receipt-state="pending"] > span {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--muted);
+}
+
+.connection-receipt-list strong,
+.connection-receipt-list small {
+  display: block;
+}
+
+.connection-receipt-list small {
+  margin-top: 3px;
+  color: #8d8d98;
+  font-size: 13px;
+}
+
 .device-profile-list {
   display: grid;
   gap: 8px;

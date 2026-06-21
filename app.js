@@ -70,6 +70,9 @@
   const manualTransport = document.querySelector("[data-manual-transport]");
   const manualSecurity = document.querySelector("[data-manual-security]");
   const manualFormat = document.querySelector("[data-manual-format]");
+  const connectionReceiptTitle = document.querySelector("[data-connection-receipt-title]");
+  const connectionReceiptSummary = document.querySelector("[data-connection-receipt-summary]");
+  const connectionReceiptList = document.querySelector("[data-connection-receipt-list]");
   const connectStatus = document.querySelector("[data-connect-status]");
   const connectCode = document.querySelector("[data-connect-code]");
   const activityList = document.querySelector("[data-activity-list]");
@@ -1116,6 +1119,74 @@
     });
   }
 
+  function getConnectionReceipt(hasAccountData) {
+    const receipt = currentConnectionKit?.connectionReceipt;
+    if (hasAccountData && receipt && typeof receipt === "object") {
+      return receipt;
+    }
+
+    return {
+      title: "Набор подключения",
+      summary: hasAccountData
+        ? "Проверяем личный ключ и список профилей."
+        : "Войдите, чтобы получить личную ссылку и открыть её в Happ.",
+      checks: [
+        {
+          label: "Личный ключ",
+          description: hasAccountData ? "Ссылка готовится к выдаче." : "Появится после входа.",
+          state: hasAccountData ? "pending" : "waiting",
+        },
+        {
+          label: "4 профиля Happ",
+          description: "Helsinki и резервные линии будут в одной подписке.",
+          state: "ready",
+        },
+        {
+          label: "Срок и трафик",
+          description: "Кабинет покажет актуальные данные после входа.",
+          state: hasAccountData ? "pending" : "waiting",
+        },
+      ],
+    };
+  }
+
+  function renderConnectionReceipt(hasAccountData) {
+    if (!connectionReceiptTitle || !connectionReceiptSummary || !connectionReceiptList) {
+      return;
+    }
+
+    const receipt = getConnectionReceipt(hasAccountData);
+    const checks = Array.isArray(receipt.checks) ? receipt.checks : [];
+    connectionReceiptTitle.textContent = typeof receipt.title === "string" && receipt.title
+      ? receipt.title
+      : "Набор подключения";
+    connectionReceiptSummary.textContent = typeof receipt.summary === "string" && receipt.summary
+      ? receipt.summary
+      : "Проверьте ключ, профили и срок подписки.";
+    connectionReceiptList.replaceChildren();
+
+    checks.forEach((check) => {
+      const row = document.createElement("article");
+      const icon = document.createElement("span");
+      const body = document.createElement("div");
+      const title = document.createElement("strong");
+      const description = document.createElement("small");
+      const state = typeof check.state === "string" && check.state ? check.state : "ready";
+
+      row.dataset.receiptState = state;
+      icon.textContent = state === "ready" ? "✓" : "•";
+      title.textContent = typeof check.label === "string" && check.label ? check.label : "Проверка";
+      description.textContent =
+        typeof check.description === "string" && check.description
+          ? check.description
+          : "Готово к проверке в личном кабинете.";
+
+      body.append(title, description);
+      row.append(icon, body);
+      connectionReceiptList.append(row);
+    });
+  }
+
   function isValidEmail(value) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
   }
@@ -1612,6 +1683,7 @@
     renderDeviceProfileList(hasAccountData);
     renderDeviceSlotList(hasAccountData);
     renderHappGuideSteps(hasAccountData);
+    renderConnectionReceipt(hasAccountData);
     renderActivityLog();
   }
 
