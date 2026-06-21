@@ -478,6 +478,14 @@
     return candidate;
   }
 
+  function getSafeProvidedHappDeepLink(subscriptionUrl, providedDeepLink = "") {
+    if (typeof providedDeepLink === "string" && providedDeepLink.startsWith("happ://add/")) {
+      return providedDeepLink;
+    }
+
+    return `happ://add/${encodeURIComponent(subscriptionUrl)}`;
+  }
+
   function getSafeAuthMethod(methodName) {
     return allowedAuthMethods.has(methodName) ? methodName : "telegram";
   }
@@ -1834,8 +1842,25 @@
         updateAccountIdentity();
         saveStoredAccount();
         renderActivityLog();
-        showToast("Ключ перевыпущен");
-        emitAccountEvent("key_rotated", "Ключ перевыпущен", "Пользователь создал новый ключ вручную.");
+        const rotation = data.rotation || {};
+        const nextLink = typeof rotation.subscriptionUrl === "string" && rotation.subscriptionUrl
+          ? rotation.subscriptionUrl
+          : getSubscriptionUrl();
+        const rotationMessage = typeof rotation.message === "string" && rotation.message
+          ? rotation.message
+          : "Новый ключ готов. Обновите подписку в Happ.";
+        if (connectStatus) {
+          applyStatusBadge(connectStatus, true, "Новый ключ готов");
+        }
+        if (nextLink) {
+          navigator.clipboard?.writeText(nextLink).catch(() => {});
+        }
+        emitAccountEvent(
+          "key_rotated",
+          "Ключ перевыпущен",
+          `${rotationMessage} ${getSafeProvidedHappDeepLink(nextLink, rotation.happDeepLink).startsWith("happ://add/") ? "Можно открыть в Happ." : ""}`.trim()
+        );
+        showToast("Новый ключ готов и скопирован");
         return;
       } catch {
         emitAccountEvent("key_rotated", "Ошибка перевыпуска", "Пользователь не смог перевыпустить ключ.");
