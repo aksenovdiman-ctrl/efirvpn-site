@@ -1657,6 +1657,167 @@ body.account-route main {
   background: #1d1d23;
 }
 
+.connection-kit-card {
+  background:
+    radial-gradient(circle at 100% 0%, rgba(53, 230, 176, 0.12), transparent 48%),
+    #17171f;
+}
+
+.connection-grid {
+  display: grid;
+  grid-template-columns: 176px minmax(0, 1fr);
+  gap: 14px;
+  align-items: stretch;
+}
+
+.connection-code {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 16px;
+  border: 1px solid rgba(53, 230, 176, 0.2);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent),
+    #10141a;
+}
+
+.connection-code-grid {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 3px;
+  width: 132px;
+  aspect-ratio: 1;
+  padding: 10px;
+  border-radius: 7px;
+  background: #effff9;
+  box-shadow: inset 0 0 0 1px rgba(4, 16, 11, 0.1);
+}
+
+.connection-code-grid span {
+  border-radius: 2px;
+  background: rgba(4, 16, 11, 0.09);
+}
+
+.connection-code-grid span.is-filled {
+  background: #04100b;
+}
+
+.connection-code strong {
+  color: var(--text);
+  font-size: 18px;
+}
+
+.connection-code small,
+.connection-manual span,
+.manual-spec-grid span,
+.device-summary span {
+  color: #8d8d98;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.connection-manual {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: var(--radius);
+  background: #1d1d23;
+}
+
+.connection-manual p {
+  margin: 0;
+  min-height: 48px;
+  padding: 13px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.035);
+  color: #d9d9e0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.connection-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.manual-spec-grid,
+.device-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.manual-spec-grid div,
+.device-summary div {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.manual-spec-grid strong,
+.device-summary strong {
+  display: block;
+  margin-top: 6px;
+  color: var(--text);
+  font-size: 17px;
+  line-height: 1.2;
+}
+
+.device-profile-list {
+  display: grid;
+  gap: 8px;
+}
+
+.device-profile-list article {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  min-height: 66px;
+  padding: 12px 14px;
+  border: 1px solid rgba(53, 230, 176, 0.13);
+  border-radius: var(--radius);
+  background: #1d1d23;
+}
+
+.device-profile-list article > span {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: linear-gradient(145deg, rgba(53, 230, 176, 0.2), rgba(84, 216, 245, 0.12));
+  color: var(--accent);
+  font-weight: 950;
+}
+
+.device-profile-list strong,
+.device-profile-list small {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.device-profile-list small {
+  margin-top: 4px;
+  color: var(--muted);
+}
+
+.device-profile-list b {
+  color: var(--accent-2);
+  font-size: 13px;
+}
+
 .tariffs-card {
   display: grid;
   gap: 10px;
@@ -2244,8 +2405,19 @@ body.account-route main {
   .subscription-box,
   .server-list article,
   .device-row,
+  .connection-grid,
+  .device-profile-list article,
   .referral-card {
     grid-template-columns: 1fr;
+  }
+
+  .connection-code-grid {
+    width: min(152px, 72vw);
+  }
+
+  .manual-spec-grid,
+  .device-summary {
+    grid-template-columns: 1fr 1fr;
   }
 
   .server-list article > div {
@@ -2276,6 +2448,12 @@ body.account-route main {
   }
 
   .subscription-box button {
+    width: 100%;
+  }
+
+  .connection-actions,
+  .connection-actions .happ-button,
+  .connection-actions .ghost-button {
     width: 100%;
   }
 

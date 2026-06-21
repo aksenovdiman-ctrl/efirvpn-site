@@ -52,6 +52,12 @@
   const planUpgradeButton = document.querySelector("[data-plan-upgrade]");
   const subLink = document.querySelector("#subLink");
   const profileList = document.querySelector("[data-profile-list]");
+  const deviceProfileList = document.querySelector("[data-device-profile-list]");
+  const manualSubscriptionLink = document.querySelector("[data-manual-subscription-link]");
+  const manualExpires = document.querySelector("[data-manual-expires]");
+  const manualTraffic = document.querySelector("[data-manual-traffic]");
+  const connectStatus = document.querySelector("[data-connect-status]");
+  const connectCode = document.querySelector("[data-connect-code]");
   const activityList = document.querySelector("[data-activity-list]");
   const activityEmpty = document.querySelector("[data-activity-empty]");
   const toast = document.querySelector("#toast");
@@ -400,6 +406,37 @@
     return index === 0 ? "🇫🇮" : "★";
   }
 
+  function getConnectionSeed(subscriptionUrl) {
+    const raw = subscriptionUrl || currentIdentity.subscriptionToken || currentIdentity.email || "efirvpn";
+    let hash = 0;
+    for (let index = 0; index < raw.length; index += 1) {
+      hash = (hash * 31 + raw.charCodeAt(index)) >>> 0;
+    }
+    return hash || 1;
+  }
+
+  function renderConnectionCode(subscriptionUrl, hasAccountData) {
+    if (!connectCode) {
+      return;
+    }
+
+    connectCode.replaceChildren();
+    const seed = getConnectionSeed(subscriptionUrl);
+    for (let index = 0; index < 81; index += 1) {
+      const cell = document.createElement("span");
+      const row = Math.floor(index / 9);
+      const col = index % 9;
+      const isCorner =
+        (row < 3 && col < 3) ||
+        (row < 3 && col > 5) ||
+        (row > 5 && col < 3);
+      const mixed = (seed + index * 17 + row * 29 + col * 43) % 7;
+      const shouldFill = isCorner || (hasAccountData ? mixed < 3 : (row + col) % 5 === 0);
+      cell.className = shouldFill ? "is-filled" : "";
+      connectCode.append(cell);
+    }
+  }
+
   function isAuthMethodAvailable(methodName) {
     return authCapabilities[getSafeAuthMethod(methodName)] !== false;
   }
@@ -592,6 +629,46 @@
       content.append(title, meta);
       row.append(icon, content, status);
       profileList.append(row);
+    });
+  }
+
+  function renderDeviceProfileList(hasAccountData) {
+    if (!deviceProfileList) {
+      return;
+    }
+
+    deviceProfileList.replaceChildren();
+    const profiles = hasAccountData ? currentProfiles : [];
+    const rows = profiles.length
+      ? profiles
+      : [
+          {
+            name: hasAccountData ? "EfirVPN · профили обновляются" : "EfirVPN · профиль ожидает входа",
+            protocol: "VLESS",
+            network: "TCP",
+            security: "Reality",
+            json: true,
+          },
+        ];
+
+    rows.forEach((profile, index) => {
+      const row = document.createElement("article");
+      const icon = document.createElement("span");
+      const content = document.createElement("div");
+      const title = document.createElement("strong");
+      const meta = document.createElement("small");
+      const status = document.createElement("b");
+
+      icon.textContent = profiles.length ? formatProfileIcon(index) : "VPN";
+      title.textContent = profiles.length
+        ? formatProfileDisplayName(index, profile.name)
+        : profile.name;
+      meta.textContent = formatProfileProtocol(profile);
+      status.textContent = profiles.length ? formatProfileType(index) : hasAccountData ? "скоро" : "готовим";
+
+      content.append(title, meta);
+      row.append(icon, content, status);
+      deviceProfileList.append(row);
     });
   }
 
@@ -879,7 +956,27 @@
       subLink.textContent = subscriptionUrl || "Ключ появится после входа";
     }
 
+    if (manualSubscriptionLink) {
+      manualSubscriptionLink.textContent = subscriptionUrl || "Ключ появится после входа";
+    }
+
+    if (manualExpires) {
+      manualExpires.textContent = hasAccountData ? formatShortDate(currentIdentity.expiresAt) : "—";
+    }
+
+    if (manualTraffic) {
+      manualTraffic.textContent = hasAccountData
+        ? limit > 0
+          ? `${leftText} ГБ осталось`
+          : `${usedText} ГБ использовано`
+        : "—";
+    }
+
+    applyStatusBadge(connectStatus, hasAccountData, hasAccountData ? "Готов к импорту" : "Ключ ожидает входа");
+    renderConnectionCode(subscriptionUrl, hasAccountData);
+
     renderProfileList(hasAccountData);
+    renderDeviceProfileList(hasAccountData);
     renderActivityLog();
   }
 

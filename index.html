@@ -456,20 +456,82 @@
           </div>
 
           <div class="tab-panel" data-panel="devices">
-            <article class="dashboard-card">
-              <h3>Инструкция подключения</h3>
-              <div class="guide-list">
-                <p><b>1.</b> Установите Happ на устройство.</p>
-                <p><b>2.</b> Нажмите “Добавить в Happ” или скопируйте ключ.</p>
-                <p><b>3.</b> Выберите сервер и нажмите подключение.</p>
+            <article class="dashboard-card connection-kit-card">
+              <div class="dashboard-card-head">
+                <span class="dash-icon">▣</span>
+                <div>
+                  <h3>Добавить в Happ</h3>
+                  <p>Один профиль обновляет срок, трафик и все доступные линии.</p>
+                </div>
+                <b class="status-badge" data-connect-status>Ключ ожидает входа</b>
+              </div>
+
+              <div class="connection-grid">
+                <div class="connection-code" aria-label="Код профиля">
+                  <div class="connection-code-grid" data-connect-code></div>
+                  <strong>EfirVPN</strong>
+                  <small>Код профиля</small>
+                </div>
+
+                <div class="connection-manual">
+                  <span>Subscription link</span>
+                  <p data-manual-subscription-link>Ключ появится после входа</p>
+                  <div class="connection-actions">
+                    <button class="happ-button" type="button" data-open-happ>
+                      Открыть в Happ
+                    </button>
+                    <button class="ghost-button" type="button" data-copy-sub>
+                      Скопировать
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="manual-spec-grid" aria-label="Параметры профиля">
+                <div><span>Протокол</span><strong>VLESS</strong></div>
+                <div><span>Транспорт</span><strong>TCP</strong></div>
+                <div><span>Защита</span><strong>Reality</strong></div>
+                <div><span>Формат</span><strong>JSON</strong></div>
               </div>
             </article>
+
             <article class="dashboard-card">
-              <h3>Подключенные устройства</h3>
-              <p>
-                Устройства появятся здесь после включения контроля подключений.
-                Сейчас один ключ можно использовать в рамках лимита тарифа.
-              </p>
+              <div class="dashboard-card-head">
+                <span class="dash-icon dash-purple">☰</span>
+                <div>
+                  <h3>Профили на устройстве</h3>
+                  <p>Так список будет выглядеть после импорта подписки в Happ.</p>
+                </div>
+              </div>
+              <div class="device-profile-list" data-device-profile-list>
+                <article>
+                  <span>VPN</span>
+                  <div>
+                    <strong>EfirVPN · профиль ожидает входа</strong>
+                    <small>VLESS | TCP | Reality | JSON</small>
+                  </div>
+                  <b>готовим</b>
+                </article>
+              </div>
+            </article>
+
+            <article class="dashboard-card">
+              <div class="dashboard-card-head">
+                <span class="dash-icon">✓</span>
+                <div>
+                  <h3>Инструкция подключения</h3>
+                  <p>Без ручных настроек: импортируйте ссылку и выберите профиль.</p>
+                </div>
+              </div>
+              <div class="guide-list">
+                <p><b>1.</b> Установите Happ и откройте личный кабинет EfirVPN.</p>
+                <p><b>2.</b> Нажмите “Открыть в Happ” или скопируйте subscription link.</p>
+                <p><b>3.</b> Обновите подписку в Happ и выберите основной профиль Helsinki.</p>
+              </div>
+              <div class="device-summary">
+                <div><span>Действует до</span><strong data-manual-expires>—</strong></div>
+                <div><span>Трафик</span><strong data-manual-traffic>—</strong></div>
+              </div>
             </article>
           </div>
 
