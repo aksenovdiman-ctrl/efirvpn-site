@@ -38,6 +38,12 @@
   const trafficDescription = document.querySelector("[data-traffic-description]");
   const trafficStatusBadge = document.querySelector("[data-traffic-status-badge]");
   const trafficBar = document.querySelector("[data-traffic-bar]");
+  const happPreviewTitle = document.querySelector("[data-happ-preview-title]");
+  const happPreviewUpdated = document.querySelector("[data-happ-preview-updated]");
+  const happPreviewTraffic = document.querySelector("[data-happ-preview-traffic]");
+  const happPreviewExpires = document.querySelector("[data-happ-preview-expires]");
+  const happPreviewBar = document.querySelector("[data-happ-preview-bar]");
+  const happPreviewNote = document.querySelector("[data-happ-preview-note]");
   const copyButtons = document.querySelectorAll("[data-copy-sub]");
   const openHappButtons = document.querySelectorAll("[data-open-happ]");
   const rotateKeyButtons = document.querySelectorAll("[data-rotate-key]");
@@ -707,6 +713,14 @@
   function updateAccountIdentity() {
     const subscriptionUrl = getSubscriptionUrl();
     const hasAccountData = isAuthenticated && Boolean(subscriptionUrl);
+    const limit = Number(currentIdentity.trafficLimitGb) || 0;
+    const rawUsed = Number(currentIdentity.trafficUsedGb) || 0;
+    const used = limit > 0 ? Math.min(rawUsed, limit) : rawUsed;
+    const left = limit > 0 ? Math.max(0, limit - used) : 0;
+    const usedPercent = limit > 0 ? Math.round((used / limit) * 100) : 0;
+    const leftText = formatGb(left);
+    const usedText = formatGb(rawUsed);
+    const limitText = formatGb(limit);
 
     if (accountUser) {
       accountUser.textContent = currentIdentity.username || "Аккаунт";
@@ -744,16 +758,30 @@
       accountDeviceLimit.textContent = ` / ${defaultDeviceLimit}`;
     }
 
-    if (trafficLeft && trafficUsed && trafficLimit && trafficNote && trafficBar && trafficMeta && trafficSpentRow) {
-      const limit = Number(currentIdentity.trafficLimitGb) || 0;
-      const rawUsed = Number(currentIdentity.trafficUsedGb) || 0;
-      const used = limit > 0 ? Math.min(rawUsed, limit) : rawUsed;
-      const left = limit > 0 ? Math.max(0, limit - used) : 0;
-      const usedPercent = limit > 0 ? Math.round((used / limit) * 100) : 0;
-      const leftText = formatGb(left);
-      const usedText = formatGb(rawUsed);
-      const limitText = formatGb(limit);
+    if (happPreviewTitle && happPreviewUpdated && happPreviewTraffic && happPreviewExpires && happPreviewBar && happPreviewNote) {
+      happPreviewTitle.textContent = hasAccountData ? "EfirVPN · личный доступ" : "EfirVPN · профиль ожидает входа";
+      happPreviewUpdated.textContent = hasAccountData
+        ? "Автообновление подписки · Happ JSON"
+        : "Автообновление профиля после входа";
+      happPreviewTraffic.textContent = hasAccountData
+        ? limit > 0
+          ? `${usedText} GB/${limitText} GB`
+          : `${usedText} GB/∞`
+        : "— GB/∞";
+      happPreviewExpires.textContent = hasAccountData
+        ? `Истекает: ${formatShortDate(currentIdentity.expiresAt)}`
+        : "Истекает: —";
+      happPreviewBar.style.width = hasAccountData
+        ? limit > 0
+          ? `${Math.min(100, usedPercent)}%`
+          : "100%"
+        : "8%";
+      happPreviewNote.textContent = hasAccountData
+        ? `${limit > 0 ? `🟢 Осталось ${leftText} ГБ из ${limitText} ГБ` : "🟢 Безлимитный пакет активен"}\n↳ Основная линия: Helsinki / Finland\n↳ Резервные профили: VLESS | TCP | Reality | JSON`
+        : "🟢 Основная линия Helsinki готовится после входа\n↳ Резервные профили появятся в одном JSON-ключе";
+    }
 
+    if (trafficLeft && trafficUsed && trafficLimit && trafficNote && trafficBar && trafficMeta && trafficSpentRow) {
       if (hasAccountData && limit === 0) {
         trafficLeft.textContent = "∞";
         trafficUsed.textContent = usedText;
