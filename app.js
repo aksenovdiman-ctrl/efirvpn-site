@@ -18,6 +18,7 @@
   const authMessage = document.querySelector("[data-auth-message]");
   const apiStatus = document.querySelector("[data-api-status]");
   const telegramLoginButton = document.querySelector("[data-telegram-login]");
+  const telegramStaticLink = document.querySelector("[data-telegram-static]");
   const accountTitle = document.querySelector("[data-account-title]");
   const accountUser = document.querySelector("[data-account-user]");
   const accountProvider = document.querySelector("[data-account-provider]");
@@ -73,10 +74,10 @@
   const defaultDeviceLimit = 5;
 
   const subscriptionOverviewLines = Object.freeze([
-    "🟢 Основная линия: защищенный доступ",
+    "🟢 Основная линия: Helsinki / Finland",
     "↳ Резервные профили помогают при нестабильной сети",
-    "↳ Один ключ для Happ, v2rayN, v2rayNG и Shadowrocket",
-    "↳ Helsinki + резервные линии в одной подписке",
+    "↳ Формат профилей: VLESS | TCP | Reality | JSON",
+    "↳ Один личный ключ для Happ, v2rayN, v2rayNG и Shadowrocket",
   ]);
 
   let toastTimer = 0;
@@ -87,6 +88,10 @@
   let currentProfiles = [];
   let currentEvents = [];
   let hasOpenedSessionLog = false;
+  let authCapabilities = {
+    telegram: true,
+    email: false,
+  };
   let currentIdentity = {
     email: "",
     provider: "Войдите в кабинет",
@@ -356,10 +361,18 @@
   }
 
   function formatProfileProtocol(profile) {
+    const labelMap = {
+      reality: "Reality",
+      tcp: "TCP",
+      vless: "VLESS",
+      tls: "TLS",
+      httpupgrade: "HTTP upgrade",
+      xhttp: "XHTTP",
+    };
     const parts = [profile.protocol, profile.network, profile.security, profile.json ? "JSON" : ""]
       .filter(Boolean)
-      .map((part) => String(part).toUpperCase());
-    return parts.join(" · ") || "VLESS · TCP · REALITY · JSON";
+      .map((part) => labelMap[String(part).toLowerCase()] || String(part).toUpperCase());
+    return parts.join(" | ") || "VLESS | TCP | Reality | JSON";
   }
 
   function formatProfileType(index) {
@@ -372,7 +385,11 @@
   }
 
   function formatProfileIcon(index) {
-    return index === 0 ? "FI" : "★";
+    return index === 0 ? "🇫🇮" : "★";
+  }
+
+  function isAuthMethodAvailable(methodName) {
+    return authCapabilities[getSafeAuthMethod(methodName)] !== false;
   }
 
   function getEventIcon(eventType) {
@@ -525,10 +542,10 @@
       const meta = document.createElement("small");
       const status = document.createElement("b");
 
-      icon.className = "flag";
+      icon.className = "flag flag--placeholder";
       icon.textContent = "VPN";
       title.textContent = hasAccountData ? "Профили обновляются" : "Профили появятся после входа";
-      meta.textContent = "VLESS · TCP · Reality · JSON";
+      meta.textContent = "VLESS | TCP | Reality | JSON";
       status.textContent = hasAccountData ? "скоро" : "готовим";
 
       content.append(title, meta);
@@ -545,7 +562,7 @@
       const meta = document.createElement("small");
       const status = document.createElement("b");
 
-      icon.className = "flag";
+      icon.className = index === 0 ? "flag flag--country" : "flag flag--reserve";
       icon.textContent = formatProfileIcon(index);
       title.textContent = formatProfileDisplayName(index, profile.name);
       meta.textContent = formatProfileProtocol(profile);
@@ -577,6 +594,53 @@
     authMessage.textContent = message;
   }
 
+  function availableAuthMethodsText() {
+    const enabled = [];
+    if (authCapabilities.telegram) {
+      enabled.push("Telegram");
+    }
+    if (authCapabilities.email) {
+      enabled.push("Email");
+    }
+    return enabled.join(" или ");
+  }
+
+  function updateAuthAvailability() {
+    authMethods.forEach((method) => {
+      const authMethod = getSafeAuthMethod(method.dataset.authMethod);
+      const enabled = isAuthMethodAvailable(authMethod);
+      method.disabled = !enabled;
+      method.setAttribute("aria-disabled", String(!enabled));
+    });
+
+    if (telegramLoginButton) {
+      telegramLoginButton.disabled = !authCapabilities.telegram;
+      telegramLoginButton.textContent = authCapabilities.telegram
+        ? "Войти через Telegram"
+        : "Telegram скоро подключим";
+    }
+
+    if (telegramStaticLink) {
+      telegramStaticLink.setAttribute("aria-disabled", String(!authCapabilities.telegram));
+      telegramStaticLink.tabIndex = authCapabilities.telegram ? 0 : -1;
+    }
+
+    if (emailSubmit) {
+      emailSubmit.disabled = !authCapabilities.email;
+      emailSubmit.textContent = authCapabilities.email ? "Получить код" : "Email скоро подключим";
+    }
+
+    if (confirmCodeButton) {
+      confirmCodeButton.disabled = !authCapabilities.email;
+    }
+
+    const activeMethod = document.querySelector("[data-auth-method].active")?.dataset.authMethod || "telegram";
+    if (!isAuthMethodAvailable(activeMethod)) {
+      const fallback = authCapabilities.telegram ? "telegram" : authCapabilities.email ? "email" : "telegram";
+      setAuthMethod(fallback);
+    }
+  }
+
   function explainApiDelay() {
     setApiStatus(
       "is-warning",
@@ -590,7 +654,19 @@
     try {
       const health = await apiFetch("/health");
       if (health?.ok || health?.status === "ok") {
-        setApiStatus("is-ready", "Кабинет готов: можно войти через Telegram или email.");
+        authCapabilities = {
+          telegram: typeof health.telegramConfigured === "boolean" ? health.telegramConfigured : true,
+          email: Boolean(health.emailConfigured),
+        };
+        updateAuthAvailability();
+
+        const authText = availableAuthMethodsText();
+        setApiStatus(
+          authText ? "is-ready" : "is-warning",
+          authText
+            ? `Кабинет готов: вход через ${authText}.`
+            : "Кабинет API работает, но способы входа еще не подключены."
+        );
         return true;
       }
     } catch {
@@ -710,10 +786,10 @@
               ? `↳ Остаток: ${leftText} ГБ из ${limitText} ГБ`
               : "↳ Безлимитный пакет, остаток неограничен";
 
-          trafficDescription.textContent = `${subscriptionOverviewLines.join("\n")}\n${remainingLine}`;
+          trafficDescription.textContent = `${remainingLine}\n${subscriptionOverviewLines.join("\n")}`;
         } else {
           trafficDescription.textContent =
-            "После входа здесь будет видно, где действует основной маршрут и какие есть резервы.";
+            "После входа здесь будет видно, сколько ГБ осталось, где основной профиль и какие резервы доступны.";
         }
       }
       trafficBar.parentElement?.setAttribute(
@@ -754,6 +830,10 @@
 
   function setAuthMethod(methodName) {
     const safeMethod = getSafeAuthMethod(methodName);
+    if (!isAuthMethodAvailable(safeMethod)) {
+      setApiStatus("is-warning", `${safeMethod === "email" ? "Email" : "Telegram"} вход еще не подключен.`);
+      return;
+    }
 
     authMethods.forEach((method) => {
       method.classList.toggle("active", method.dataset.authMethod === safeMethod);
@@ -911,6 +991,11 @@
   });
 
   telegramLoginButton?.addEventListener("click", async () => {
+    if (!authCapabilities.telegram) {
+      setApiStatus("is-warning", "Telegram вход еще не подключен. Напишите в поддержку, если нужен ключ сейчас.");
+      return;
+    }
+
     telegramLoginButton.disabled = true;
     telegramLoginButton.textContent = "Откройте Telegram";
 
@@ -952,8 +1037,20 @@
     }
   });
 
+  telegramStaticLink?.addEventListener("click", (event) => {
+    if (!authCapabilities.telegram) {
+      event.preventDefault();
+      setApiStatus("is-warning", "Telegram вход еще не подключен. Напишите в поддержку, если нужен ключ сейчас.");
+    }
+  });
+
   emailAuthForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
+
+    if (!authCapabilities.email) {
+      setApiStatus("is-warning", "Email вход пока не подключен. Используйте Telegram или поддержку.");
+      return;
+    }
 
     const formData = new FormData(emailAuthForm);
     const email = String(formData.get("email") || "").trim().toLowerCase();
