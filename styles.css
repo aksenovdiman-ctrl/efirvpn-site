@@ -2034,9 +2034,12 @@ body.account-route main {
 
   .account-sidebar {
     top: 64px;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     align-items: stretch;
     gap: 6px;
     padding: 10px 12px;
+    overflow-x: visible;
     background: rgba(8, 8, 13, 0.9);
     backdrop-filter: blur(16px);
   }
@@ -2051,10 +2054,12 @@ body.account-route main {
   }
 
   .account-tab {
-    min-width: 132px;
+    min-width: 0;
     height: 44px;
-    padding-inline: 12px;
-    font-size: 14px;
+    justify-content: center;
+    gap: 6px;
+    padding-inline: 6px;
+    font-size: 12px;
   }
 
   .account-main {
