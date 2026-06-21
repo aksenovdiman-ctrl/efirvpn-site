@@ -32,6 +32,7 @@ def main() -> int:
     for marker in (
         "data-link-telegram",
         "data-link-email",
+        "data-support-link",
         "happ-preview-card",
         "happ-actions",
         "data-happ-preview-traffic",
@@ -64,6 +65,8 @@ def main() -> int:
         "auth_started",
         "email_code_requested",
         "email_link_started",
+        "supportLinks",
+        "support_started",
         "eventMetaCatalog",
         "fallbackEventMeta",
         "applyEventCatalog",

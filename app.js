@@ -50,6 +50,7 @@
   const rotateKeyButtons = document.querySelectorAll("[data-rotate-key]");
   const linkTelegramButtons = document.querySelectorAll("[data-link-telegram]");
   const linkEmailButtons = document.querySelectorAll("[data-link-email]");
+  const supportLinks = document.querySelectorAll("[data-support-link]");
   const planUpgradeButton = document.querySelector("[data-plan-upgrade]");
   const subLink = document.querySelector("#subLink");
   const profileList = document.querySelector("[data-profile-list]");
@@ -1882,6 +1883,19 @@
 
   rotateKeyButtons.forEach((button) => {
     button.addEventListener("click", rotateSubscriptionKey);
+  });
+
+  supportLinks.forEach((link) => {
+    link.addEventListener("click", () => {
+      const source = link.dataset.supportLink || "site";
+      emitAccountEvent(
+        "support_started",
+        "Открыта поддержка",
+        source === "account"
+          ? "Пользователь открыл поддержку из личного кабинета."
+          : "Пользователь перешел в Telegram из сайта EfirVPN."
+      );
+    });
   });
 
   async function startPaymentForPlan(button) {
