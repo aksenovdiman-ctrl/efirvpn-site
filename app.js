@@ -32,6 +32,7 @@
   const openHappButton = document.querySelector("[data-open-happ]");
   const rotateKeyButton = document.querySelector("[data-rotate-key]");
   const subLink = document.querySelector("#subLink");
+  const profileList = document.querySelector("[data-profile-list]");
   const toast = document.querySelector("#toast");
   const planButtons = document.querySelectorAll("[data-plan]");
 
@@ -56,6 +57,7 @@
   let pendingAccountTab = "overview";
   let pendingEmail = "";
   let apiSessionToken = "";
+  let currentProfiles = [];
   let currentIdentity = {
     email: "",
     provider: "Войдите в кабинет",
@@ -168,12 +170,13 @@
     return response.json();
   }
 
-  function applyApiAccount(account, token = apiSessionToken) {
+  function applyApiAccount(account, token = apiSessionToken, profiles = currentProfiles) {
     if (!account || typeof account !== "object") {
       throw new Error("Invalid account response");
     }
 
     apiSessionToken = token || apiSessionToken;
+    currentProfiles = Array.isArray(profiles) ? profiles : [];
     currentIdentity = {
       ...currentIdentity,
       email: account.email || currentIdentity.email,
@@ -193,7 +196,7 @@
     }
 
     const data = await apiFetch("/api/account");
-    applyApiAccount(data.account);
+    applyApiAccount(data.account, apiSessionToken, data.profiles);
     updateAccountIdentity();
     saveStoredAccount();
     return true;
@@ -220,6 +223,61 @@
 
   function getSafeAuthMethod(methodName) {
     return allowedAuthMethods.has(methodName) ? methodName : "telegram";
+  }
+
+  function formatProfileProtocol(profile) {
+    const parts = [profile.protocol, profile.network, profile.security, profile.json ? "JSON" : ""]
+      .filter(Boolean)
+      .map((part) => String(part).toUpperCase());
+    return parts.join(" · ") || "VLESS · TCP · REALITY · JSON";
+  }
+
+  function renderProfileList(hasAccountData) {
+    if (!profileList) {
+      return;
+    }
+
+    profileList.replaceChildren();
+
+    const profiles = hasAccountData ? currentProfiles : [];
+    if (!profiles.length) {
+      const row = document.createElement("article");
+      const icon = document.createElement("span");
+      const content = document.createElement("div");
+      const title = document.createElement("strong");
+      const meta = document.createElement("small");
+      const status = document.createElement("b");
+
+      icon.className = "flag";
+      icon.textContent = "VPN";
+      title.textContent = hasAccountData ? "Профили обновляются" : "Профили появятся после входа";
+      meta.textContent = "VLESS · TCP · Reality · JSON";
+      status.textContent = hasAccountData ? "скоро" : "готовим";
+
+      content.append(title, meta);
+      row.append(icon, content, status);
+      profileList.append(row);
+      return;
+    }
+
+    profiles.forEach((profile, index) => {
+      const row = document.createElement("article");
+      const icon = document.createElement("span");
+      const content = document.createElement("div");
+      const title = document.createElement("strong");
+      const meta = document.createElement("small");
+      const status = document.createElement("b");
+
+      icon.className = "flag";
+      icon.textContent = index === 0 ? "DE" : "R";
+      title.textContent = profile.name || `Efir профиль ${index + 1}`;
+      meta.textContent = formatProfileProtocol(profile);
+      status.textContent = index === 0 ? "основной" : "резерв";
+
+      content.append(title, meta);
+      row.append(icon, content, status);
+      profileList.append(row);
+    });
   }
 
   function isValidEmail(value) {
@@ -354,10 +412,12 @@
       subLink.dataset.subscriptionLink = subscriptionUrl;
       subLink.textContent = subscriptionUrl || "Ключ появится после входа";
     }
+
+    renderProfileList(hasAccountData);
   }
 
   function completeApiAuth(data, successMessage) {
-    applyApiAccount(data.account, data.token);
+    applyApiAccount(data.account, data.token, data.profiles);
     updateAccountIdentity();
     saveStoredAccount();
     setApiStatus("is-ready", "Кабинет готов: ключ и срок подписки обновлены.");
@@ -625,7 +685,7 @@
           method: "POST",
           body: JSON.stringify({}),
         });
-        applyApiAccount(data.account);
+        applyApiAccount(data.account, apiSessionToken, data.profiles);
         updateAccountIdentity();
         saveStoredAccount();
         showToast("Ключ перевыпущен");
