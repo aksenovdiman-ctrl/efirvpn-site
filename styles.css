@@ -1721,6 +1721,17 @@ body.account-route main {
     background-color 180ms ease;
 }
 
+.server-list article > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.server-list strong,
+.server-list small {
+  display: block;
+}
+
 .flag {
   display: grid;
   place-items: center;
@@ -2235,6 +2246,10 @@ body.account-route main {
   .device-row,
   .referral-card {
     grid-template-columns: 1fr;
+  }
+
+  .server-list article > div {
+    gap: 6px;
   }
 
   .happ-preview-top {
