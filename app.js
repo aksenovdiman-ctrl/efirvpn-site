@@ -97,6 +97,31 @@
     "↳ Формат профилей: VLESS | TCP | Reality | JSON",
     "↳ Один личный ключ для Happ, v2rayN, v2rayNG и Shadowrocket",
   ]);
+  const fallbackEventMeta = Object.freeze({
+    activity_opened: { icon: "🧾", label: "Журнал", group: "account", tone: "neutral" },
+    auth_completed: { icon: "✅", label: "Вход выполнен", group: "auth", tone: "success" },
+    auth_started: { icon: "🔐", label: "Вход начат", group: "auth", tone: "info" },
+    connection_confirmed: { icon: "🟢", label: "Профиль открыт", group: "connection", tone: "success" },
+    connection_failed: { icon: "⚠️", label: "Ошибка подключения", group: "connection", tone: "warning" },
+    email_code_requested: { icon: "✉️", label: "Код Email", group: "auth", tone: "info" },
+    email_connected: { icon: "📧", label: "Email подключен", group: "auth", tone: "success" },
+    email_link_started: { icon: "📧", label: "Привязка Email", group: "auth", tone: "info" },
+    happ_open_clicked: { icon: "📲", label: "Открыт Happ", group: "connection", tone: "success" },
+    instruction_opened: { icon: "📘", label: "Инструкция", group: "support", tone: "neutral" },
+    key_rotated: { icon: "♻️", label: "Ключ обновлен", group: "connection", tone: "info" },
+    payment_failed: { icon: "⚠️", label: "Оплата не прошла", group: "payment", tone: "warning" },
+    payment_started: { icon: "💳", label: "Оплата начата", group: "payment", tone: "info" },
+    payment_succeeded: { icon: "✅", label: "Оплата прошла", group: "payment", tone: "success" },
+    status_opened: { icon: "📊", label: "Статус открыт", group: "account", tone: "neutral" },
+    subscription_created: { icon: "🔑", label: "Подписка создана", group: "connection", tone: "success" },
+    subscription_link_copied: { icon: "📋", label: "Ключ скопирован", group: "connection", tone: "info" },
+    subscription_link_requested: { icon: "📲", label: "Ключ запрошен", group: "connection", tone: "info" },
+    support_started: { icon: "💬", label: "Поддержка", group: "support", tone: "neutral" },
+    tariff_selected: { icon: "💳", label: "Тариф выбран", group: "payment", tone: "info" },
+    telegram_connected: { icon: "✈️", label: "Telegram подключен", group: "auth", tone: "success" },
+    telegram_link_started: { icon: "✈️", label: "Привязка Telegram", group: "auth", tone: "info" },
+    trial_created: { icon: "🟢", label: "Trial создан", group: "connection", tone: "success" },
+  });
 
   let toastTimer = 0;
   let isAuthenticated = false;
@@ -105,6 +130,7 @@
   let apiSessionToken = "";
   let currentProfiles = [];
   let currentEvents = [];
+  let eventMetaCatalog = { ...fallbackEventMeta };
   let currentConnectionKit = null;
   let hasOpenedSessionLog = false;
   let pendingSessionEvents = [];
@@ -516,48 +542,29 @@
     return authCapabilities[getSafeAuthMethod(methodName)] !== false;
   }
 
-  function getEventIcon(eventType) {
-    switch (eventType) {
-      case "auth_started":
-        return "🔐";
-      case "email_connected":
-      case "email_code_requested":
-        return "✉️";
-      case "telegram_connected":
-        return "📲";
-      case "telegram_link_started":
-        return "✈️";
-      case "subscription_created":
-        return "🧩";
-      case "email_link_started":
-        return "📧";
-      case "auth_completed":
-        return "✅";
-      case "trial_created":
-      case "connection_confirmed":
-        return "🟢";
-      case "subscription_link_copied":
-        return "📋";
-      case "happ_open_clicked":
-        return "🔌";
-      case "instruction_opened":
-        return "📘";
-      case "key_rotated":
-        return "♻️";
-      case "payment_started":
-      case "tariff_selected":
-        return "💳";
-      case "support_started":
-        return "🧑‍💼";
-      case "connection_failed":
-        return "⚠️";
-      case "payment_succeeded":
-        return "💚";
-      case "payment_failed":
-        return "🔥";
-      default:
-        return "🧭";
+  function getEventMeta(eventType) {
+    const fallback = { icon: "🧭", label: "Событие", group: "account", tone: "neutral" };
+    return eventMetaCatalog[eventType] || fallbackEventMeta[eventType] || fallback;
+  }
+
+  function applyEventCatalog(payload) {
+    if (!Array.isArray(payload?.eventMeta)) {
+      return;
     }
+
+    const nextCatalog = { ...fallbackEventMeta };
+    payload.eventMeta.forEach((item) => {
+      if (!item || typeof item.eventType !== "string") {
+        return;
+      }
+      nextCatalog[item.eventType] = {
+        icon: typeof item.icon === "string" && item.icon ? item.icon : "🧭",
+        label: typeof item.label === "string" && item.label ? item.label : "Событие",
+        group: typeof item.group === "string" && item.group ? item.group : "account",
+        tone: typeof item.tone === "string" && item.tone ? item.tone : "neutral",
+      };
+    });
+    eventMetaCatalog = nextCatalog;
   }
 
   function normalizeEvent({ eventType, title, details, createdAt }) {
@@ -644,14 +651,17 @@
       const title = document.createElement("strong");
       const details = document.createElement("p");
       const meta = document.createElement("small");
+      const eventMeta = getEventMeta(event.eventType);
 
       item.className = "activity-item";
+      item.dataset.eventTone = eventMeta.tone;
+      item.dataset.eventGroup = eventMeta.group;
       icon.className = "activity-icon";
-      icon.textContent = getEventIcon(event.eventType);
+      icon.textContent = eventMeta.icon;
 
       title.textContent = event.title || "Событие";
       details.textContent = event.details || "";
-      meta.textContent = formatShortTime(event.createdAt);
+      meta.textContent = `${eventMeta.label} · ${formatShortTime(event.createdAt)}`;
 
       body.append(title, details);
       item.append(icon, body, meta);
@@ -834,6 +844,16 @@
     );
   }
 
+  async function refreshEventCatalog() {
+    try {
+      const payload = await apiFetch("/api/events/types");
+      applyEventCatalog(payload);
+      renderActivityLog();
+    } catch {
+      // Keep bundled event metadata; the account journal should stay readable offline.
+    }
+  }
+
   async function checkApiStatus() {
     setApiStatus("is-checking", "Проверяем доступность кабинета.");
 
@@ -865,6 +885,7 @@
           telegram: health.telegramConfigured,
           email: Boolean(health.emailConfigured),
         };
+        await refreshEventCatalog();
         updateAuthAvailability();
 
         const authText = availableAuthMethodsText();

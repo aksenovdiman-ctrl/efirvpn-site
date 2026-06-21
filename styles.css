@@ -1468,6 +1468,27 @@ body.account-route main {
   background: #17171f;
 }
 
+.activity-item[data-event-tone="success"] {
+  border-color: rgba(53, 230, 176, 0.22);
+  background:
+    linear-gradient(90deg, rgba(53, 230, 176, 0.08), transparent 60%),
+    #17171f;
+}
+
+.activity-item[data-event-tone="info"] {
+  border-color: rgba(84, 216, 245, 0.2);
+  background:
+    linear-gradient(90deg, rgba(84, 216, 245, 0.07), transparent 60%),
+    #17171f;
+}
+
+.activity-item[data-event-tone="warning"] {
+  border-color: rgba(243, 184, 79, 0.24);
+  background:
+    linear-gradient(90deg, rgba(243, 184, 79, 0.08), transparent 60%),
+    #17171f;
+}
+
 .activity-item strong {
   display: block;
   margin-bottom: 3px;
@@ -1491,6 +1512,14 @@ body.account-route main {
   height: 24px;
   border-radius: 50%;
   background: rgba(53, 230, 176, 0.12);
+}
+
+.activity-item[data-event-tone="info"] .activity-icon {
+  background: rgba(84, 216, 245, 0.12);
+}
+
+.activity-item[data-event-tone="warning"] .activity-icon {
+  background: rgba(243, 184, 79, 0.14);
 }
 
 .activity-empty {
