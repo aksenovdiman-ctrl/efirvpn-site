@@ -53,6 +53,7 @@
   const subLink = document.querySelector("#subLink");
   const profileList = document.querySelector("[data-profile-list]");
   const deviceProfileList = document.querySelector("[data-device-profile-list]");
+  const deviceSlotList = document.querySelector("[data-device-slot-list]");
   const manualSubscriptionLink = document.querySelector("[data-manual-subscription-link]");
   const manualExpires = document.querySelector("[data-manual-expires]");
   const manualTraffic = document.querySelector("[data-manual-traffic]");
@@ -770,6 +771,49 @@
     });
   }
 
+  function renderDeviceSlotList(hasAccountData) {
+    if (!deviceSlotList) {
+      return;
+    }
+
+    deviceSlotList.replaceChildren();
+    const slots = hasAccountData && Array.isArray(currentConnectionKit?.deviceSlots)
+      ? currentConnectionKit.deviceSlots
+      : [
+          {
+            name: hasAccountData ? "Слоты устройств обновляются" : "Телефон · Happ",
+            icon: "📱",
+            status: hasAccountData ? "скоро" : "готовим",
+            description: hasAccountData
+              ? "Проверяем доступные слоты личного ключа."
+              : "Слоты появятся после входа в личный кабинет.",
+          },
+        ];
+
+    const slotLimit = Number(currentConnectionKit?.deviceLimit) || defaultDeviceLimit;
+    slots.slice(0, slotLimit).forEach((slot, index) => {
+      const row = document.createElement("article");
+      const icon = document.createElement("span");
+      const content = document.createElement("div");
+      const title = document.createElement("strong");
+      const description = document.createElement("small");
+      const status = document.createElement("b");
+
+      row.dataset.deviceSlot = index === 0 ? "primary" : "free";
+      icon.textContent = typeof slot.icon === "string" && slot.icon ? slot.icon : "•";
+      title.textContent = typeof slot.name === "string" && slot.name ? slot.name : `Устройство ${index + 1}`;
+      description.textContent =
+        typeof slot.description === "string" && slot.description
+          ? slot.description
+          : "Можно подключить тем же subscription link.";
+      status.textContent = typeof slot.status === "string" && slot.status ? slot.status : "свободно";
+
+      content.append(title, description);
+      row.append(icon, content, status);
+      deviceSlotList.append(row);
+    });
+  }
+
   function isValidEmail(value) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
   }
@@ -963,6 +1007,7 @@
     const descriptionLines = Array.isArray(connectionKit?.descriptionLines)
       ? connectionKit.descriptionLines
       : [];
+    const deviceLimit = Number(connectionKit?.deviceLimit) || defaultDeviceLimit;
     const manualSpec = connectionKit?.manualSpec || {};
 
     if (accountUser) {
@@ -998,7 +1043,7 @@
 
     if (accountDevicesUsed && accountDeviceLimit) {
       accountDevicesUsed.textContent = hasAccountData ? "0" : "—";
-      accountDeviceLimit.textContent = ` / ${defaultDeviceLimit}`;
+      accountDeviceLimit.textContent = ` / ${deviceLimit}`;
     }
 
     if (happPreviewTitle && happPreviewUpdated && happPreviewTraffic && happPreviewExpires && happPreviewBar && happPreviewNote) {
@@ -1125,6 +1170,7 @@
 
     renderProfileList(hasAccountData);
     renderDeviceProfileList(hasAccountData);
+    renderDeviceSlotList(hasAccountData);
     renderActivityLog();
   }
 

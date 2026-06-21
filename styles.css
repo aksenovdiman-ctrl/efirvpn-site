@@ -1807,7 +1807,8 @@ body.account-route main {
   gap: 8px;
 }
 
-.device-profile-list article {
+.device-profile-list article,
+.device-slot-list article {
   display: grid;
   grid-template-columns: 44px minmax(0, 1fr) auto;
   align-items: center;
@@ -1819,7 +1820,8 @@ body.account-route main {
   background: #1d1d23;
 }
 
-.device-profile-list article > span {
+.device-profile-list article > span,
+.device-slot-list article > span {
   display: grid;
   place-items: center;
   width: 38px;
@@ -1828,6 +1830,39 @@ body.account-route main {
   background: linear-gradient(145deg, rgba(53, 230, 176, 0.2), rgba(84, 216, 245, 0.12));
   color: var(--accent);
   font-weight: 950;
+}
+
+.device-slot-list {
+  display: grid;
+  gap: 8px;
+}
+
+.device-slot-list article[data-device-slot="primary"] {
+  border-color: rgba(53, 230, 176, 0.2);
+  background:
+    linear-gradient(90deg, rgba(53, 230, 176, 0.08), transparent 58%),
+    #1d1d23;
+}
+
+.device-slot-list article[data-device-slot="free"] {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.device-slot-list strong,
+.device-slot-list small {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.device-slot-list small {
+  margin-top: 4px;
+  color: var(--muted);
+}
+
+.device-slot-list b {
+  color: var(--accent-2);
+  font-size: 13px;
 }
 
 .device-profile-list article[data-profile-kind="primary"] > span {
