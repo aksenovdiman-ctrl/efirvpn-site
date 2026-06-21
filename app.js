@@ -65,6 +65,7 @@
   const connectCode = document.querySelector("[data-connect-code]");
   const activityList = document.querySelector("[data-activity-list]");
   const activityEmpty = document.querySelector("[data-activity-empty]");
+  const paymentStatus = document.querySelector("[data-payment-status]");
   const toast = document.querySelector("#toast");
   const planButtons = document.querySelectorAll("[data-plan]");
 
@@ -1659,6 +1660,9 @@
       const plan = allowedPlans.has(button.dataset.plan) ? button.dataset.plan : "тариф";
 
       openAccount("payments");
+      if (paymentStatus) {
+        paymentStatus.textContent = `Выбран тариф: ${plan}. Следующий шаг — подтверждение оплаты в Telegram.`;
+      }
       emitAccountEvent("payment_started", `Выбран тариф: ${plan}`, "Открыт выбор на оплату.");
       showToast(`Выбран тариф: ${plan}`);
     });

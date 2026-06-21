@@ -1899,6 +1899,13 @@ body.account-route main {
   gap: 10px;
 }
 
+.payment-status {
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
 .tariff-line {
   display: flex;
   align-items: center;
