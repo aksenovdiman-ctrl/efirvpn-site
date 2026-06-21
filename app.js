@@ -31,6 +31,7 @@
   const accountDaysLeft = document.querySelector("[data-account-days-left]");
   const accountExpires = document.querySelector("[data-account-expires]");
   const accountStatusBadge = document.querySelector("[data-account-status-badge]");
+  const subscriptionNextAction = document.querySelector("[data-subscription-next-action]");
   const trafficLeft = document.querySelector("[data-traffic-left]");
   const trafficUsed = document.querySelector("[data-traffic-used]");
   const trafficLimit = document.querySelector("[data-traffic-limit]");
@@ -184,6 +185,7 @@
     expiresAt: "",
     trafficLimitGb: 0,
     trafficUsedGb: 0,
+    subscriptionStatus: null,
   };
 
   function formatShortDate(value) {
@@ -207,6 +209,33 @@
 
     const diffMs = expires.getTime() - Date.now();
     return Math.max(0, Math.ceil(diffMs / 86_400_000));
+  }
+
+  function getSubscriptionStatus(hasAccountData) {
+    const status = currentIdentity.subscriptionStatus;
+    if (hasAccountData && status && typeof status === "object") {
+      return status;
+    }
+
+    if (!hasAccountData) {
+      return {
+        state: "signed_out",
+        label: "Вход не выполнен",
+        daysLeft: null,
+        nextAction: "Войдите, чтобы увидеть состояние подписки.",
+      };
+    }
+
+    const daysLeft = getDaysLeft(currentIdentity.expiresAt);
+    return {
+      state: daysLeft > 0 ? "active" : "expired",
+      label: daysLeft > 0 ? "Подписка активна" : "Подписка истекла",
+      daysLeft,
+      nextAction:
+        daysLeft > 0
+          ? "Ключ, трафик и профили обновляются в личном кабинете."
+          : "Продлите тариф, чтобы снова получить доступ.",
+    };
   }
 
   function formatShortTime(value) {
@@ -334,6 +363,7 @@
       expiresAt: "",
       trafficLimitGb: 0,
       trafficUsedGb: 0,
+      subscriptionStatus: null,
     };
     currentProfiles = [];
     currentEvents = [];
@@ -415,6 +445,7 @@
       expiresAt: account.expiresAt || currentIdentity.expiresAt,
       trafficLimitGb: account.trafficLimitGb ?? currentIdentity.trafficLimitGb,
       trafficUsedGb: account.trafficUsedGb ?? currentIdentity.trafficUsedGb,
+      subscriptionStatus: account.subscriptionStatus || currentIdentity.subscriptionStatus,
     };
   }
 
@@ -1271,6 +1302,7 @@
     const happPreview = getHappPreview();
     const deviceLimit = Number(connectionKit?.deviceLimit) || defaultDeviceLimit;
     const manualSpec = connectionKit?.manualSpec || {};
+    const subscriptionStatus = getSubscriptionStatus(hasAccountData);
 
     if (accountUser) {
       accountUser.textContent = currentIdentity.username || "Аккаунт";
@@ -1294,13 +1326,25 @@
 
     if (accountDaysLeft) {
       if (hasAccountData) {
-        const daysLeft = getDaysLeft(currentIdentity.expiresAt);
+        const daysLeft = Number.isFinite(Number(subscriptionStatus.daysLeft))
+          ? Number(subscriptionStatus.daysLeft)
+          : getDaysLeft(currentIdentity.expiresAt);
         accountDaysLeft.textContent = `Осталось ${daysLeft} дн.`;
-        applyStatusBadge(accountStatusBadge, true, "Подписка активна");
+        applyStatusBadge(
+          accountStatusBadge,
+          subscriptionStatus.state !== "expired",
+          subscriptionStatus.label || "Подписка активна"
+        );
       } else {
         accountDaysLeft.textContent = "Войдите, чтобы увидеть срок";
         applyStatusBadge(accountStatusBadge, false, "Вход не выполнен");
       }
+    }
+
+    if (subscriptionNextAction) {
+      subscriptionNextAction.textContent = hasAccountData
+        ? subscriptionStatus.nextAction || "Ключ, трафик и профили обновляются в личном кабинете."
+        : "Войдите, чтобы увидеть состояние подписки.";
     }
 
     if (accountDevicesUsed && accountDeviceLimit) {
@@ -1545,6 +1589,7 @@
       expiresAt: "",
       trafficLimitGb: 0,
       trafficUsedGb: 0,
+      subscriptionStatus: null,
     };
 
     if (accountPage) {

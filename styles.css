@@ -1244,6 +1244,18 @@ body.account-route main {
   gap: 12px;
 }
 
+.subscription-next-action {
+  margin: 14px 0 0;
+  padding: 12px;
+  border: 1px solid rgba(53, 230, 176, 0.16);
+  border-radius: var(--radius);
+  background: rgba(53, 230, 176, 0.055);
+  color: #d7efe6;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
 .metric-card {
   position: relative;
   min-height: 74px;
