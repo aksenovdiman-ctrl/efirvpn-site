@@ -101,6 +101,7 @@
   let apiSessionToken = "";
   let currentProfiles = [];
   let currentEvents = [];
+  let currentConnectionKit = null;
   let hasOpenedSessionLog = false;
   let pendingSessionEvents = [];
   let authCapabilities = {
@@ -271,6 +272,7 @@
     };
     currentProfiles = [];
     currentEvents = [];
+    currentConnectionKit = null;
     updateAccountIdentity();
 
     if (shouldToast) {
@@ -319,7 +321,8 @@
     account,
     token = apiSessionToken,
     profiles = currentProfiles,
-    events = currentEvents
+    events = currentEvents,
+    connection = undefined
   ) {
     if (!account || typeof account !== "object") {
       throw new Error("Invalid account response");
@@ -328,6 +331,14 @@
     apiSessionToken = token || apiSessionToken;
     currentProfiles = Array.isArray(profiles) ? profiles : [];
     currentEvents = Array.isArray(events) ? events : [];
+    if (connection && typeof connection === "object") {
+      currentConnectionKit = connection;
+      if (Array.isArray(connection.profiles)) {
+        currentProfiles = connection.profiles;
+      }
+    } else if (connection === null) {
+      currentConnectionKit = null;
+    }
     currentIdentity = {
       ...currentIdentity,
       email: account.email || currentIdentity.email,
@@ -349,10 +360,31 @@
 
     const data = await apiFetch("/api/account");
     applyApiAccount(data.account, apiSessionToken, data.profiles, data.events);
+    await refreshConnectionKit();
     updateAccountIdentity();
     renderActivityLog();
     saveStoredAccount();
     return true;
+  }
+
+  async function refreshConnectionKit() {
+    if (!apiSessionToken) {
+      return false;
+    }
+
+    try {
+      const data = await apiFetch("/api/account/connect");
+      applyApiAccount(
+        data.account,
+        apiSessionToken,
+        data.connection?.profiles || currentProfiles,
+        currentEvents,
+        data.connection || null
+      );
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   function getSafeTab(tabName) {
@@ -374,11 +406,25 @@
     return url.toString();
   }
 
+  function getSafeHappDeepLink(subscriptionUrl) {
+    const fallback = `happ://add/${encodeURIComponent(subscriptionUrl)}`;
+    const candidate = currentConnectionKit?.happDeepLink;
+    if (typeof candidate !== "string" || !candidate.startsWith("happ://add/")) {
+      return fallback;
+    }
+
+    return candidate;
+  }
+
   function getSafeAuthMethod(methodName) {
     return allowedAuthMethods.has(methodName) ? methodName : "telegram";
   }
 
   function formatProfileProtocol(profile) {
+    if (profile.displayProtocol) {
+      return profile.displayProtocol;
+    }
+
     const labelMap = {
       reality: "Reality",
       tcp: "TCP",
@@ -394,6 +440,11 @@
   }
 
   function formatProfileType(index) {
+    const kitProfile = currentConnectionKit?.profiles?.[index];
+    if (kitProfile?.role) {
+      return kitProfile.role;
+    }
+
     if (index === 0) {
       return "основной";
     }
@@ -829,14 +880,29 @@
   function updateAccountIdentity() {
     const subscriptionUrl = getSubscriptionUrl();
     const hasAccountData = isAuthenticated && Boolean(subscriptionUrl);
+    const connectionKit =
+      hasAccountData && currentConnectionKit?.subscriptionUrl === subscriptionUrl
+        ? currentConnectionKit
+        : null;
+    const kitTraffic = connectionKit?.traffic || {};
     const limit = Number(currentIdentity.trafficLimitGb) || 0;
     const rawUsed = Number(currentIdentity.trafficUsedGb) || 0;
     const used = limit > 0 ? Math.min(rawUsed, limit) : rawUsed;
     const left = limit > 0 ? Math.max(0, limit - used) : 0;
-    const usedPercent = limit > 0 ? Math.round((used / limit) * 100) : 0;
+    const usedPercent = Number.isFinite(Number(kitTraffic.usedPercent))
+      ? Number(kitTraffic.usedPercent)
+      : limit > 0
+        ? Math.round((used / limit) * 100)
+        : 0;
     const leftText = formatGb(left);
     const usedText = formatGb(rawUsed);
     const limitText = formatGb(limit);
+    const trafficSummary = typeof kitTraffic.summary === "string" ? kitTraffic.summary : "";
+    const remainingText =
+      typeof kitTraffic.remainingText === "string" ? kitTraffic.remainingText : "";
+    const descriptionLines = Array.isArray(connectionKit?.descriptionLines)
+      ? connectionKit.descriptionLines
+      : [];
 
     if (accountUser) {
       accountUser.textContent = currentIdentity.username || "Аккаунт";
@@ -875,17 +941,17 @@
     }
 
     if (happPreviewTitle && happPreviewUpdated && happPreviewTraffic && happPreviewExpires && happPreviewBar && happPreviewNote) {
-      happPreviewTitle.textContent = hasAccountData ? "EfirVPN · личный доступ" : "EfirVPN · профиль ожидает входа";
+      happPreviewTitle.textContent = hasAccountData
+        ? connectionKit?.title || "EfirVPN · личный доступ"
+        : "EfirVPN · профиль ожидает входа";
       happPreviewUpdated.textContent = hasAccountData
-        ? "Автообновление подписки · Happ JSON"
+        ? connectionKit?.subtitle || "Автообновление подписки · Happ JSON"
         : "Автообновление профиля после входа";
       happPreviewTraffic.textContent = hasAccountData
-        ? limit > 0
-          ? `${usedText} GB/${limitText} GB`
-          : `${usedText} GB/∞`
+        ? trafficSummary || (limit > 0 ? `${usedText} GB/${limitText} GB` : `${usedText} GB/∞`)
         : "— GB/∞";
       happPreviewExpires.textContent = hasAccountData
-        ? `Истекает: ${formatShortDate(currentIdentity.expiresAt)}`
+        ? `Истекает: ${formatShortDate(connectionKit?.expiresAt || currentIdentity.expiresAt)}`
         : "Истекает: —";
       happPreviewBar.style.width = hasAccountData
         ? limit > 0
@@ -893,7 +959,7 @@
           : "100%"
         : "8%";
       happPreviewNote.textContent = hasAccountData
-        ? `${limit > 0 ? `🟢 Осталось ${leftText} ГБ из ${limitText} ГБ` : "🟢 Безлимитный пакет активен"}\n↳ Основная линия: Helsinki / Finland\n↳ Резервные профили: VLESS | TCP | Reality | JSON`
+        ? `${remainingText ? `🟢 ${remainingText}` : limit > 0 ? `🟢 Осталось ${leftText} ГБ из ${limitText} ГБ` : "🟢 Безлимитный пакет активен"}\n${(descriptionLines.length ? descriptionLines : subscriptionOverviewLines).map((line) => `↳ ${line.replace(/^↳\s*/, "").replace(/^🟢\s*/, "")}`).join("\n")}`
         : "🟢 Основная линия Helsinki готовится после входа\n↳ Резервные профили появятся в одном JSON-ключе";
     }
 
@@ -902,9 +968,9 @@
         trafficLeft.textContent = "∞";
         trafficUsed.textContent = usedText;
         trafficLimit.textContent = "0";
-        trafficMeta.textContent = `Израсходовано: ${usedText} ГБ / Безлимит`;
+        trafficMeta.textContent = trafficSummary || `Израсходовано: ${usedText} ГБ / Безлимит`;
         trafficSpentRow.textContent = `Без лимита • использовано ${usedText} ГБ`;
-        trafficNote.textContent = `Безлимитный тариф · трафик обновляется по лимитам подписки`;
+        trafficNote.textContent = remainingText || `Безлимитный тариф · трафик обновляется по лимитам подписки`;
         trafficBar.style.width = "100%";
         applyStatusBadge(trafficStatusBadge, true, "Безлимит");
       } else {
@@ -912,13 +978,13 @@
         trafficUsed.textContent = hasAccountData ? usedText : "—";
         trafficLimit.textContent = hasAccountData ? limitText : "—";
         trafficMeta.textContent = hasAccountData
-          ? `Израсходовано: ${usedText} ГБ • Лимит: ${limitText} ГБ`
+          ? trafficSummary || `Израсходовано: ${usedText} ГБ • Лимит: ${limitText} ГБ`
           : "Войдите, чтобы увидеть данные по трафику";
         trafficNote.textContent = hasAccountData && limit > 0
-          ? `Остаток: ${leftText} ГБ • Использовано: ${usedText} ГБ`
+          ? remainingText || `Остаток: ${leftText} ГБ • Использовано: ${usedText} ГБ`
           : "Войдите, чтобы увидеть остаток трафика";
         trafficSpentRow.textContent = hasAccountData
-          ? `Остаток ${leftText} ГБ из ${limitText} ГБ (${usedPercent}%)`
+          ? `${remainingText || `Остаток ${leftText} ГБ из ${limitText} ГБ`} (${usedPercent}%)`
           : "Загрузка данных...";
         trafficBar.style.width = `${Math.min(100, usedPercent)}%`;
         if (hasAccountData) {
@@ -931,11 +997,17 @@
       if (trafficDescription) {
         if (hasAccountData) {
           const remainingLine =
-            limit > 0
-              ? `↳ Остаток: ${leftText} ГБ из ${limitText} ГБ`
+            remainingText
+              ? `↳ ${remainingText}`
+              : limit > 0
+                ? `↳ Остаток: ${leftText} ГБ из ${limitText} ГБ`
               : "↳ Безлимитный пакет, остаток неограничен";
 
-          trafficDescription.textContent = `${remainingLine}\n${subscriptionOverviewLines.join("\n")}`;
+          const overviewLines = descriptionLines.length
+            ? descriptionLines.map((line) => `↳ ${line.replace(/^↳\s*/, "").replace(/^🟢\s*/, "")}`)
+            : subscriptionOverviewLines;
+
+          trafficDescription.textContent = `${remainingLine}\n${overviewLines.join("\n")}`;
         } else {
           trafficDescription.textContent =
             "После входа здесь будет видно, сколько ГБ осталось, где основной профиль и какие резервы доступны.";
@@ -966,9 +1038,7 @@
 
     if (manualTraffic) {
       manualTraffic.textContent = hasAccountData
-        ? limit > 0
-          ? `${leftText} ГБ осталось`
-          : `${usedText} ГБ использовано`
+        ? remainingText || (limit > 0 ? `${leftText} ГБ осталось` : `${usedText} ГБ использовано`)
         : "—";
     }
 
@@ -992,6 +1062,14 @@
       emitAccountEvent(event.eventType, event.title, event.details);
     });
     emitAccountEvent("auth_completed", "Вход выполнен", "Профиль и ключ доступны в кабинете.");
+    refreshConnectionKit()
+      .then((loaded) => {
+        if (loaded) {
+          updateAccountIdentity();
+          saveStoredAccount();
+        }
+      })
+      .catch(() => {});
 
     if (authLabel) {
       authLabel.textContent = "Кабинет";
@@ -1054,6 +1132,7 @@
     pendingAccountTab = "overview";
     currentEvents = [];
     currentProfiles = [];
+    currentConnectionKit = null;
     clearStoredAccount();
     apiSessionToken = "";
     currentIdentity = {
@@ -1392,7 +1471,7 @@
     try {
       const subscriptionUrl = getSafeSubscriptionLink();
       navigator.clipboard?.writeText(subscriptionUrl).catch(() => {});
-      window.location.href = `happ://add/${encodeURIComponent(subscriptionUrl)}`;
+      window.location.href = getSafeHappDeepLink(subscriptionUrl);
       await emitAccountEvent(
         "happ_open_clicked",
         "Запрос на добавление в Happ",
@@ -1421,7 +1500,8 @@
           method: "POST",
           body: JSON.stringify({}),
         });
-        applyApiAccount(data.account, apiSessionToken, data.profiles, data.events);
+        applyApiAccount(data.account, apiSessionToken, data.profiles, data.events, null);
+        await refreshConnectionKit();
         updateAccountIdentity();
         saveStoredAccount();
         renderActivityLog();
