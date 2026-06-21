@@ -78,6 +78,12 @@
 
   const allowedTabs = new Set(Object.keys(titles));
   const allowedPlans = new Set(["1 месяц", "3 месяца", "6 месяцев", "12 месяцев"]);
+  const planToTariffCode = Object.freeze({
+    "1 месяц": "month_1",
+    "3 месяца": "month_3",
+    "6 месяцев": "month_6",
+    "12 месяцев": "month_12",
+  });
   const allowedAuthMethods = new Set(["telegram", "email"]);
   const allowedSubscriptionHost = "panel.efirvpn.ru";
   const apiBase = "https://panel.efirvpn.ru/efir-api";
@@ -1655,16 +1661,55 @@
     button.addEventListener("click", rotateSubscriptionKey);
   });
 
+  async function startPaymentForPlan(button) {
+    const plan = allowedPlans.has(button.dataset.plan) ? button.dataset.plan : "тариф";
+    const tariffCode = button.dataset.tariffCode || planToTariffCode[plan] || "";
+
+    openAccount("payments");
+    if (!isAuthenticated || !apiSessionToken) {
+      if (paymentStatus) {
+        paymentStatus.textContent = `Выбран тариф: ${plan}. Войдите в кабинет, чтобы продолжить оплату через Telegram.`;
+      }
+      addLocalEvent("tariff_selected", `Выбран тариф: ${plan}`, "Ожидаем вход в личный кабинет для продолжения оплаты.");
+      showToast(`Выбран тариф: ${plan}`);
+      return;
+    }
+
+    button.disabled = true;
+    if (paymentStatus) {
+      paymentStatus.textContent = `Готовим оплату тарифа ${plan}...`;
+    }
+
+    try {
+      const data = await apiFetch("/api/payments/start", {
+        method: "POST",
+        body: JSON.stringify({ tariff_code: tariffCode, plan }),
+      });
+      if (Array.isArray(data.events)) {
+        currentEvents = data.events.map(normalizeEvent);
+        renderActivityLog();
+      }
+      const payment = data.payment || {};
+      const tariff = payment.tariff || {};
+      if (paymentStatus) {
+        paymentStatus.textContent = `${tariff.title || plan} выбран: ${tariff.priceRub || "—"} ₽. Подтвердите оплату в Telegram-боте EfirVPN.`;
+      }
+      showToast("Откройте Telegram для оплаты");
+      return;
+    } catch {
+      await emitAccountEvent("payment_started", `Выбран тариф: ${plan}`, "API оплаты временно недоступен, выбор сохранен локально.");
+      if (paymentStatus) {
+        paymentStatus.textContent = `Выбран тариф: ${plan}. Если Telegram не открылся, напишите в поддержку.`;
+      }
+      showToast("Тариф сохранен в журнале");
+    } finally {
+      button.disabled = false;
+    }
+  }
+
   planButtons.forEach((button) => {
     button.addEventListener("click", () => {
-      const plan = allowedPlans.has(button.dataset.plan) ? button.dataset.plan : "тариф";
-
-      openAccount("payments");
-      if (paymentStatus) {
-        paymentStatus.textContent = `Выбран тариф: ${plan}. Следующий шаг — подтверждение оплаты в Telegram.`;
-      }
-      emitAccountEvent("payment_started", `Выбран тариф: ${plan}`, "Открыт выбор на оплату.");
-      showToast(`Выбран тариф: ${plan}`);
+      startPaymentForPlan(button);
     });
   });
 
