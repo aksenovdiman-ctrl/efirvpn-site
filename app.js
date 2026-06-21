@@ -42,6 +42,7 @@
   const openHappButtons = document.querySelectorAll("[data-open-happ]");
   const rotateKeyButtons = document.querySelectorAll("[data-rotate-key]");
   const linkTelegramButtons = document.querySelectorAll("[data-link-telegram]");
+  const linkEmailButtons = document.querySelectorAll("[data-link-email]");
   const planUpgradeButton = document.querySelector("[data-plan-upgrade]");
   const subLink = document.querySelector("#subLink");
   const profileList = document.querySelector("[data-profile-list]");
@@ -1091,6 +1092,29 @@
         button.disabled = false;
         button.textContent = "Привязать Telegram";
       }
+    });
+  });
+
+  linkEmailButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      if (!isAuthenticated) {
+        openAuth("email");
+        return;
+      }
+
+      if (currentIdentity.provider === "Email подключен") {
+        showToast("Email уже подключен");
+        return;
+      }
+
+      if (!authCapabilities.email) {
+        setApiStatus("is-warning", "Email вход пока не подключен. Нужны SMTP-настройки для отправки кодов.");
+        return;
+      }
+
+      pendingAccountTab = "overview";
+      openAuth("email");
+      setApiStatus("is-checking", "Введите Email: код привяжет почту к текущему ключу.");
     });
   });
 
