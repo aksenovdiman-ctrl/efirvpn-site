@@ -461,6 +461,26 @@
     return index === 0 ? "🇫🇮" : "★";
   }
 
+  function getProfileKind(profile, index) {
+    if (profile?.profileKind === "primary" || profile?.profileKind === "reserve") {
+      return profile.profileKind;
+    }
+
+    return index === 0 ? "primary" : "reserve";
+  }
+
+  function getProfileIcon(profile, index) {
+    return typeof profile?.displayIcon === "string" && profile.displayIcon
+      ? profile.displayIcon
+      : formatProfileIcon(index);
+  }
+
+  function getProfileStatus(profile, index) {
+    return typeof profile?.statusText === "string" && profile.statusText
+      ? profile.statusText
+      : formatProfileType(index);
+  }
+
   function getConnectionSeed(subscriptionUrl) {
     const raw = subscriptionUrl || currentIdentity.subscriptionToken || currentIdentity.email || "efirvpn";
     let hash = 0;
@@ -656,6 +676,7 @@
       const status = document.createElement("b");
 
       icon.className = "flag flag--placeholder";
+      row.dataset.profileKind = "placeholder";
       icon.textContent = "VPN";
       title.textContent = hasAccountData ? "Профили обновляются" : "Профили появятся после входа";
       meta.textContent = "VLESS | TCP | Reality | JSON";
@@ -674,12 +695,18 @@
       const title = document.createElement("strong");
       const meta = document.createElement("small");
       const status = document.createElement("b");
+      const kind = getProfileKind(profile, index);
 
-      icon.className = index === 0 ? "flag flag--country" : "flag flag--reserve";
-      icon.textContent = formatProfileIcon(index);
+      row.dataset.profileKind = kind;
+      row.dataset.profileAccent = profile.accent || (kind === "primary" ? "country" : "sky");
+      icon.className = kind === "primary" ? "flag flag--country" : "flag flag--reserve";
+      icon.textContent = getProfileIcon(profile, index);
       title.textContent = formatProfileDisplayName(index, profile.name);
       meta.textContent = formatProfileProtocol(profile);
-      status.textContent = formatProfileType(index);
+      status.textContent = getProfileStatus(profile, index);
+      if (typeof profile.description === "string" && profile.description) {
+        row.title = profile.description;
+      }
 
       content.append(title, meta);
       row.append(icon, content, status);
@@ -713,13 +740,19 @@
       const title = document.createElement("strong");
       const meta = document.createElement("small");
       const status = document.createElement("b");
+      const kind = profiles.length ? getProfileKind(profile, index) : "placeholder";
 
-      icon.textContent = profiles.length ? formatProfileIcon(index) : "VPN";
+      row.dataset.profileKind = kind;
+      row.dataset.profileAccent = profile.accent || (kind === "primary" ? "country" : "sky");
+      icon.textContent = profiles.length ? getProfileIcon(profile, index) : "VPN";
       title.textContent = profiles.length
         ? formatProfileDisplayName(index, profile.name)
         : profile.name;
       meta.textContent = formatProfileProtocol(profile);
-      status.textContent = profiles.length ? formatProfileType(index) : hasAccountData ? "скоро" : "готовим";
+      status.textContent = profiles.length ? getProfileStatus(profile, index) : hasAccountData ? "скоро" : "готовим";
+      if (typeof profile.description === "string" && profile.description) {
+        row.title = profile.description;
+      }
 
       content.append(title, meta);
       row.append(icon, content, status);
