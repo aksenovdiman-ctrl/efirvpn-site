@@ -539,6 +539,37 @@
       : formatProfileType(index);
   }
 
+  function getHappPreview() {
+    const preview = currentConnectionKit?.happPreview;
+    return preview && typeof preview === "object" ? preview : {};
+  }
+
+  function cleanPreviewLine(line) {
+    return String(line || "").replace(/^↳\s*/, "").replace(/^🟢\s*/, "");
+  }
+
+  function getHappPreviewNote({ hasAccountData, remainingText, limit, leftText, limitText, descriptionLines }) {
+    if (!hasAccountData) {
+      return "🟢 Основная линия Helsinki готовится после входа\n↳ Резервные профили появятся в одном JSON-ключе";
+    }
+
+    const preview = getHappPreview();
+    const statusLine = typeof preview.statusLine === "string" && preview.statusLine
+      ? preview.statusLine
+      : remainingText
+        ? `🟢 ${remainingText}`
+        : limit > 0
+          ? `🟢 Осталось ${leftText} ГБ из ${limitText} ГБ`
+          : "🟢 Безлимитный пакет активен";
+    const noteLines = Array.isArray(preview.noteLines) && preview.noteLines.length
+      ? preview.noteLines
+      : descriptionLines.length
+        ? descriptionLines
+        : subscriptionOverviewLines;
+
+    return `${statusLine}\n${noteLines.map((line) => `↳ ${cleanPreviewLine(line)}`).join("\n")}`;
+  }
+
   function getConnectionSeed(subscriptionUrl) {
     const raw = subscriptionUrl || currentIdentity.subscriptionToken || currentIdentity.email || "efirvpn";
     let hash = 0;
@@ -1158,6 +1189,7 @@
     const descriptionLines = Array.isArray(connectionKit?.descriptionLines)
       ? connectionKit.descriptionLines
       : [];
+    const happPreview = getHappPreview();
     const deviceLimit = Number(connectionKit?.deviceLimit) || defaultDeviceLimit;
     const manualSpec = connectionKit?.manualSpec || {};
 
@@ -1205,13 +1237,13 @@
 
     if (happPreviewTitle && happPreviewUpdated && happPreviewTraffic && happPreviewExpires && happPreviewBar && happPreviewNote) {
       happPreviewTitle.textContent = hasAccountData
-        ? connectionKit?.title || "EfirVPN · личный доступ"
+        ? happPreview.title || connectionKit?.title || "EfirVPN · личный доступ"
         : "EfirVPN · профиль ожидает входа";
       happPreviewUpdated.textContent = hasAccountData
-        ? connectionKit?.subtitle || "Автообновление подписки · Happ JSON"
+        ? happPreview.updatedText || connectionKit?.subtitle || "Автообновление подписки · Happ JSON"
         : "Автообновление профиля после входа";
       happPreviewTraffic.textContent = hasAccountData
-        ? trafficSummary || (limit > 0 ? `${usedText} GB/${limitText} GB` : `${usedText} GB/∞`)
+        ? happPreview.trafficLabel || trafficSummary || (limit > 0 ? `${usedText} GB/${limitText} GB` : `${usedText} GB/∞`)
         : "— GB/∞";
       happPreviewExpires.textContent = hasAccountData
         ? `Истекает: ${formatShortDate(connectionKit?.expiresAt || currentIdentity.expiresAt)}`
@@ -1221,9 +1253,14 @@
           ? `${Math.min(100, usedPercent)}%`
           : "100%"
         : "8%";
-      happPreviewNote.textContent = hasAccountData
-        ? `${remainingText ? `🟢 ${remainingText}` : limit > 0 ? `🟢 Осталось ${leftText} ГБ из ${limitText} ГБ` : "🟢 Безлимитный пакет активен"}\n${(descriptionLines.length ? descriptionLines : subscriptionOverviewLines).map((line) => `↳ ${line.replace(/^↳\s*/, "").replace(/^🟢\s*/, "")}`).join("\n")}`
-        : "🟢 Основная линия Helsinki готовится после входа\n↳ Резервные профили появятся в одном JSON-ключе";
+      happPreviewNote.textContent = getHappPreviewNote({
+        hasAccountData,
+        remainingText,
+        limit,
+        leftText,
+        limitText,
+        descriptionLines,
+      });
     }
 
     if (trafficLeft && trafficUsed && trafficLimit && trafficNote && trafficBar && trafficMeta && trafficSpentRow) {
