@@ -45,6 +45,8 @@ def main() -> int:
         'const subscriptionBase = "https://panel.efirvpn.ru/api/sub"',
         "hasCurrentAccountApi",
         "telegram_link_started",
+        "auth_started",
+        "email_code_requested",
         "email_link_started",
         "subscription_link_copied",
         "happ_open_clicked",

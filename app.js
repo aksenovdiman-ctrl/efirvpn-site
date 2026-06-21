@@ -96,6 +96,7 @@
   let currentProfiles = [];
   let currentEvents = [];
   let hasOpenedSessionLog = false;
+  let pendingSessionEvents = [];
   let authCapabilities = {
     telegram: true,
     email: false,
@@ -408,6 +409,7 @@
       case "auth_started":
         return "🔐";
       case "email_connected":
+      case "email_code_requested":
         return "✉️";
       case "telegram_connected":
         return "📲";
@@ -470,6 +472,9 @@
       .slice(0, 20);
 
     currentEvents = next;
+    if (!isAuthenticated) {
+      pendingSessionEvents = [localEvent, ...pendingSessionEvents].slice(0, 8);
+    }
     renderActivityLog();
   }
 
@@ -718,11 +723,19 @@
       return;
     }
 
+    const wasOpen = authDialog.open;
     if (!authDialog.open) {
       authDialog.showModal();
     }
 
     setAuthMethod(method);
+    if (!isAuthenticated && !wasOpen) {
+      emitAccountEvent(
+        "auth_started",
+        method === "email" ? "Начат вход по Email" : "Начат вход через Telegram",
+        "Пользователь открыл форму входа в личный кабинет."
+      );
+    }
   }
 
   function closeAuth() {
@@ -870,11 +883,16 @@
   }
 
   function completeApiAuth(data, successMessage) {
+    const eventsToSync = pendingSessionEvents.slice().reverse();
+    pendingSessionEvents = [];
     applyApiAccount(data.account, data.token, data.profiles, data.events);
     isAuthenticated = true;
     updateAccountIdentity();
     saveStoredAccount();
     setApiStatus("is-ready", "Кабинет готов: ключ и срок подписки обновлены.");
+    eventsToSync.forEach((event) => {
+      emitAccountEvent(event.eventType, event.title, event.details);
+    });
     emitAccountEvent("auth_completed", "Вход выполнен", "Профиль и ключ доступны в кабинете.");
 
     if (authLabel) {
@@ -1218,6 +1236,9 @@
         data.ok ? "is-ready" : "is-warning",
         data.ok ? "Код отправлен на почту." : "Повторите попытку позже."
       );
+      if (data.ok) {
+        emitAccountEvent("email_code_requested", "Код Email отправлен", "Пользователь запросил одноразовый код для входа.");
+      }
     } catch {
       explainApiDelay();
     }
