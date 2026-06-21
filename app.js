@@ -103,7 +103,7 @@
     auth_started: { icon: "🔐", label: "Вход начат", group: "auth", tone: "info" },
     connection_confirmed: { icon: "🟢", label: "Профиль открыт", group: "connection", tone: "success" },
     connection_failed: { icon: "⚠️", label: "Ошибка подключения", group: "connection", tone: "warning" },
-    email_code_requested: { icon: "✉️", label: "Код Email", group: "auth", tone: "info" },
+    email_code_requested: { icon: "📧", label: "Код Email", group: "auth", tone: "info" },
     email_connected: { icon: "📧", label: "Email подключен", group: "auth", tone: "success" },
     email_link_started: { icon: "📧", label: "Привязка Email", group: "auth", tone: "info" },
     happ_open_clicked: { icon: "📲", label: "Открыт Happ", group: "connection", tone: "success" },
