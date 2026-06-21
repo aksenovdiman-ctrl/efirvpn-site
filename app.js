@@ -23,22 +23,34 @@
   const accountProvider = document.querySelector("[data-account-provider]");
   const accountProviderTitle = document.querySelector("[data-account-provider-title]");
   const accountEmail = document.querySelector("[data-account-email]");
+  const accountDevicesUsed = document.querySelector("[data-account-devices-used]");
+  const accountDeviceLimit = document.querySelector("[data-account-device-limit]");
   const accountDaysLeft = document.querySelector("[data-account-days-left]");
   const accountExpires = document.querySelector("[data-account-expires]");
+  const accountStatusBadge = document.querySelector("[data-account-status-badge]");
   const trafficLeft = document.querySelector("[data-traffic-left]");
+  const trafficUsed = document.querySelector("[data-traffic-used]");
+  const trafficLimit = document.querySelector("[data-traffic-limit]");
   const trafficNote = document.querySelector("[data-traffic-note]");
+  const trafficMeta = document.querySelector("[data-traffic-meta]");
+  const trafficSpentRow = document.querySelector("[data-traffic-spent]");
+  const trafficDescription = document.querySelector("[data-traffic-description]");
+  const trafficStatusBadge = document.querySelector("[data-traffic-status-badge]");
   const trafficBar = document.querySelector("[data-traffic-bar]");
-  const copyButton = document.querySelector("[data-copy-sub]");
-  const openHappButton = document.querySelector("[data-open-happ]");
-  const rotateKeyButton = document.querySelector("[data-rotate-key]");
+  const copyButtons = document.querySelectorAll("[data-copy-sub]");
+  const openHappButtons = document.querySelectorAll("[data-open-happ]");
+  const rotateKeyButtons = document.querySelectorAll("[data-rotate-key]");
+  const planUpgradeButton = document.querySelector("[data-plan-upgrade]");
   const subLink = document.querySelector("#subLink");
   const profileList = document.querySelector("[data-profile-list]");
+  const activityList = document.querySelector("[data-activity-list]");
+  const activityEmpty = document.querySelector("[data-activity-empty]");
   const toast = document.querySelector("#toast");
   const planButtons = document.querySelectorAll("[data-plan]");
 
   const titles = Object.freeze({
     overview: "Мой VPN",
-    devices: "Инструкция",
+    devices: "Подключить устройство",
     payments: "Тарифы",
     help: "Поддержка",
   });
@@ -52,12 +64,29 @@
   const storageKey = "efirvpn.account.v1";
   const sessionStorageKey = "efirvpn.session.v1";
 
+  const profileNames = Object.freeze([
+    "Efir Helsinki · Основной",
+    "Efir Reserve 1 · резервная линия",
+    "Efir Reserve 2 · стабильная сеть",
+    "Efir Reserve 3 · низкая задержка",
+  ]);
+  const defaultDeviceLimit = 5;
+
+  const subscriptionOverviewLines = Object.freeze([
+    "🟢 Основная линия: защищенный доступ",
+    "↳ Резервные профили помогают при нестабильной сети",
+    "↳ Один ключ для Happ, v2rayN, v2rayNG и Shadowrocket",
+    "↳ Helsinki + резервные линии в одной подписке",
+  ]);
+
   let toastTimer = 0;
   let isAuthenticated = false;
   let pendingAccountTab = "overview";
   let pendingEmail = "";
   let apiSessionToken = "";
   let currentProfiles = [];
+  let currentEvents = [];
+  let hasOpenedSessionLog = false;
   let currentIdentity = {
     email: "",
     provider: "Войдите в кабинет",
@@ -93,6 +122,37 @@
     return Math.max(0, Math.ceil(diffMs / 86_400_000));
   }
 
+  function formatShortTime(value) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return "—";
+    }
+
+    return new Intl.DateTimeFormat("ru-RU", {
+      day: "2-digit",
+      month: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(date);
+  }
+
+  function formatGb(value) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) {
+      return "0";
+    }
+
+    return numeric % 1 === 0 ? String(Math.trunc(numeric)) : numeric.toFixed(1);
+  }
+
+  function applyStatusBadge(element, enabled, text) {
+    if (!element) {
+      return;
+    }
+    element.textContent = text;
+    element.dataset.status = enabled ? "active" : "inactive";
+  }
+
   function getSubscriptionUrl(token = currentIdentity.subscriptionToken) {
     if (currentIdentity.subscriptionUrl) {
       return currentIdentity.subscriptionUrl;
@@ -103,6 +163,15 @@
     }
 
     return `${subscriptionBase}/${encodeURIComponent(token)}`;
+  }
+
+  function formatProfileDisplayName(index, profileName) {
+    const safeName = typeof profileName === "string" ? profileName.trim() : "";
+    if (safeName) {
+      return safeName;
+    }
+
+    return profileNames[index] || `Efir Reserve ${index + 1} · резервный профиль`;
   }
 
   function loadStoredAccount() {
@@ -121,8 +190,9 @@
         ...currentIdentity,
         ...parsed,
       };
-      apiSessionToken = window.localStorage.getItem(sessionStorageKey) || "";
-      isAuthenticated = true;
+      const storedToken = window.localStorage.getItem(sessionStorageKey) || "";
+      apiSessionToken = storedToken;
+      isAuthenticated = typeof storedToken === "string" && storedToken.length > 20;
     } catch {
       window.localStorage.removeItem(storageKey);
     }
@@ -148,6 +218,50 @@
     }
   }
 
+  class ApiError extends Error {
+    constructor(status, message, details) {
+      super(message);
+      this.name = "ApiError";
+      this.status = status;
+      this.details = details;
+    }
+  }
+
+  function clearAuthState(shouldToast = false, message = "") {
+    clearStoredAccount();
+    apiSessionToken = "";
+    isAuthenticated = false;
+    currentIdentity = {
+      ...currentIdentity,
+      email: "",
+      provider: "Войдите в кабинет",
+      providerTitle: "Войдите в кабинет",
+      username: "Аккаунт",
+      subscriptionUrl: "",
+      subscriptionToken: "",
+      expiresAt: "",
+      trafficLimitGb: 0,
+      trafficUsedGb: 0,
+    };
+    currentProfiles = [];
+    currentEvents = [];
+    updateAccountIdentity();
+
+    if (shouldToast) {
+      showToast(message || "Сессия завершена. Войдите заново.");
+    }
+  }
+
+  function handleApiError(error) {
+    if (error instanceof ApiError && error.status === 401) {
+      clearAuthState(true, "Сессия истекла. Войдите заново.");
+      setApiStatus("is-warning", "Сессия истекла. Нажмите вход, чтобы обновить доступ.");
+      return;
+    }
+
+    throw error;
+  }
+
   async function apiFetch(path, options = {}) {
     const headers = {
       "Content-Type": "application/json",
@@ -164,19 +278,30 @@
     });
 
     if (!response.ok) {
-      throw new Error(`API ${response.status}`);
+      const details = await response.text().catch(() => "");
+      if (response.status === 401) {
+        handleApiError(new ApiError(response.status, `API ${response.status}`, details));
+      }
+
+      throw new ApiError(response.status, `API ${response.status}`, details);
     }
 
     return response.json();
   }
 
-  function applyApiAccount(account, token = apiSessionToken, profiles = currentProfiles) {
+  function applyApiAccount(
+    account,
+    token = apiSessionToken,
+    profiles = currentProfiles,
+    events = currentEvents
+  ) {
     if (!account || typeof account !== "object") {
       throw new Error("Invalid account response");
     }
 
     apiSessionToken = token || apiSessionToken;
     currentProfiles = Array.isArray(profiles) ? profiles : [];
+    currentEvents = Array.isArray(events) ? events : [];
     currentIdentity = {
       ...currentIdentity,
       email: account.email || currentIdentity.email,
@@ -185,7 +310,7 @@
       username: account.username || account.email || currentIdentity.username,
       subscriptionUrl: account.subscriptionUrl || currentIdentity.subscriptionUrl,
       expiresAt: account.expiresAt || currentIdentity.expiresAt,
-      trafficLimitGb: account.trafficLimitGb || currentIdentity.trafficLimitGb,
+      trafficLimitGb: account.trafficLimitGb ?? currentIdentity.trafficLimitGb,
       trafficUsedGb: account.trafficUsedGb ?? currentIdentity.trafficUsedGb,
     };
   }
@@ -196,8 +321,9 @@
     }
 
     const data = await apiFetch("/api/account");
-    applyApiAccount(data.account, apiSessionToken, data.profiles);
+    applyApiAccount(data.account, apiSessionToken, data.profiles, data.events);
     updateAccountIdentity();
+    renderActivityLog();
     saveStoredAccount();
     return true;
   }
@@ -230,6 +356,153 @@
       .filter(Boolean)
       .map((part) => String(part).toUpperCase());
     return parts.join(" · ") || "VLESS · TCP · REALITY · JSON";
+  }
+
+  function formatProfileType(index) {
+    if (index === 0) {
+      return "основной";
+    }
+
+    const reserveTypes = ["резервная линия", "стабильная сеть", "низкая задержка", "резервный профиль"];
+    return reserveTypes[index - 1] || "резервный";
+  }
+
+  function formatProfileIcon(index) {
+    return index === 0 ? "FI" : "★";
+  }
+
+  function getEventIcon(eventType) {
+    switch (eventType) {
+      case "auth_started":
+        return "🔐";
+      case "email_connected":
+        return "✉️";
+      case "telegram_connected":
+        return "📲";
+      case "subscription_created":
+        return "🧩";
+      case "auth_completed":
+        return "✅";
+      case "trial_created":
+      case "connection_confirmed":
+        return "🟢";
+      case "subscription_link_copied":
+        return "📋";
+      case "happ_open_clicked":
+        return "🔌";
+      case "instruction_opened":
+        return "📘";
+      case "key_rotated":
+        return "♻️";
+      case "payment_started":
+        return "💳";
+      case "support_started":
+        return "🧑‍💼";
+      case "connection_failed":
+        return "⚠️";
+      case "payment_succeeded":
+        return "💚";
+      case "payment_failed":
+        return "🔥";
+      default:
+        return "🧭";
+    }
+  }
+
+  function normalizeEvent({ eventType, title, details, createdAt }) {
+    return {
+      eventType: typeof eventType === "string" && eventType ? eventType : "account_event",
+      title: typeof title === "string" && title ? title : "Событие",
+      details: typeof details === "string" && details ? details : "",
+      createdAt: typeof createdAt === "string" && createdAt ? createdAt : new Date().toISOString(),
+    };
+  }
+
+  function addLocalEvent(eventType, title, details) {
+    const localEvent = normalizeEvent({
+      eventType,
+      title,
+      details,
+      createdAt: new Date().toISOString(),
+    });
+
+    const next = [localEvent, ...currentEvents]
+      .filter((event, index, list) => {
+        const key = `${event.eventType}|${event.createdAt}|${event.title}`;
+        return list.findIndex((item) => `${item.eventType}|${item.createdAt}|${item.title}` === key) === index;
+      })
+      .slice(0, 20);
+
+    currentEvents = next;
+    renderActivityLog();
+  }
+
+  async function emitAccountEvent(eventType, title, details) {
+    if (!isAuthenticated || !apiSessionToken) {
+      addLocalEvent(eventType, title, details);
+      return;
+    }
+
+    try {
+      await apiFetch("/api/events", {
+        method: "POST",
+        body: JSON.stringify({
+          event_type: eventType,
+          title,
+          details,
+        }),
+      });
+    } catch {
+      // API can be temporarily unavailable. Keep local audit in UI anyway.
+    }
+
+    addLocalEvent(eventType, title, details);
+  }
+
+  function renderActivityLog() {
+    if (!activityList || !activityEmpty) {
+      return;
+    }
+
+    activityList.replaceChildren();
+
+    if (!isAuthenticated) {
+      activityList.hidden = true;
+      activityEmpty.hidden = false;
+      activityEmpty.textContent = "Войдите, чтобы увидеть историю.";
+      return;
+    }
+
+    if (!currentEvents.length) {
+      activityList.hidden = true;
+      activityEmpty.hidden = false;
+      activityEmpty.textContent = "Журнал пока пустой.";
+      return;
+    }
+
+    activityList.hidden = false;
+    activityEmpty.hidden = true;
+
+    currentEvents.forEach((event) => {
+      const item = document.createElement("article");
+      const icon = document.createElement("span");
+      const body = document.createElement("div");
+      const title = document.createElement("strong");
+      const details = document.createElement("p");
+      const meta = document.createElement("small");
+
+      item.className = "activity-item";
+      icon.className = "activity-icon";
+      icon.textContent = getEventIcon(event.eventType);
+
+      title.textContent = event.title || "Событие";
+      details.textContent = event.details || "";
+      meta.textContent = formatShortTime(event.createdAt);
+
+      body.append(title, details);
+      item.append(icon, body, meta);
+      activityList.append(item);
+    });
   }
 
   function renderProfileList(hasAccountData) {
@@ -269,10 +542,10 @@
       const status = document.createElement("b");
 
       icon.className = "flag";
-      icon.textContent = index === 0 ? "DE" : "R";
-      title.textContent = profile.name || `Efir профиль ${index + 1}`;
+      icon.textContent = formatProfileIcon(index);
+      title.textContent = formatProfileDisplayName(index, profile.name);
       meta.textContent = formatProfileProtocol(profile);
-      status.textContent = index === 0 ? "основной" : "резерв";
+      status.textContent = formatProfileType(index);
 
       content.append(title, meta);
       row.append(icon, content, status);
@@ -374,29 +647,70 @@
       if (hasAccountData) {
         const daysLeft = getDaysLeft(currentIdentity.expiresAt);
         accountDaysLeft.textContent = `Осталось ${daysLeft} дн.`;
+        applyStatusBadge(accountStatusBadge, true, "Подписка активна");
       } else {
         accountDaysLeft.textContent = "Войдите, чтобы увидеть срок";
+        applyStatusBadge(accountStatusBadge, false, "Вход не выполнен");
       }
     }
 
-    if (trafficLeft && trafficNote && trafficBar) {
+    if (accountDevicesUsed && accountDeviceLimit) {
+      accountDevicesUsed.textContent = hasAccountData ? "0" : "—";
+      accountDeviceLimit.textContent = ` / ${defaultDeviceLimit}`;
+    }
+
+    if (trafficLeft && trafficUsed && trafficLimit && trafficNote && trafficBar && trafficMeta && trafficSpentRow) {
       const limit = Number(currentIdentity.trafficLimitGb) || 0;
       const rawUsed = Number(currentIdentity.trafficUsedGb) || 0;
       const used = limit > 0 ? Math.min(rawUsed, limit) : rawUsed;
       const left = limit > 0 ? Math.max(0, limit - used) : 0;
       const usedPercent = limit > 0 ? Math.round((used / limit) * 100) : 0;
+      const leftText = formatGb(left);
+      const usedText = formatGb(rawUsed);
+      const limitText = formatGb(limit);
 
       if (hasAccountData && limit === 0) {
         trafficLeft.textContent = "∞";
-        trafficNote.textContent = `без ограничения тарифа · использовано ${rawUsed.toFixed(2)} ГБ`;
+        trafficUsed.textContent = usedText;
+        trafficLimit.textContent = "0";
+        trafficMeta.textContent = `Израсходовано: ${usedText} ГБ / Безлимит`;
+        trafficSpentRow.textContent = `Без лимита • использовано ${usedText} ГБ`;
+        trafficNote.textContent = `Безлимитный тариф · трафик обновляется по лимитам подписки`;
         trafficBar.style.width = "100%";
+        applyStatusBadge(trafficStatusBadge, true, "Безлимит");
       } else {
-        trafficLeft.textContent = hasAccountData && limit > 0 ? left.toFixed(1) : "—";
-        trafficNote.textContent =
-          hasAccountData && limit > 0
-            ? `осталось из ${limit} ГБ · использовано ${usedPercent}%`
-            : "Войдите, чтобы увидеть остаток трафика";
-        trafficBar.style.width = `${usedPercent}%`;
+        trafficLeft.textContent = hasAccountData && limit > 0 ? leftText : "—";
+        trafficUsed.textContent = hasAccountData ? usedText : "—";
+        trafficLimit.textContent = hasAccountData ? limitText : "—";
+        trafficMeta.textContent = hasAccountData
+          ? `Израсходовано: ${usedText} ГБ • Лимит: ${limitText} ГБ`
+          : "Войдите, чтобы увидеть данные по трафику";
+        trafficNote.textContent = hasAccountData && limit > 0
+          ? `Остаток: ${leftText} ГБ • Использовано: ${usedText} ГБ`
+          : "Войдите, чтобы увидеть остаток трафика";
+        trafficSpentRow.textContent = hasAccountData
+          ? `Остаток ${leftText} ГБ из ${limitText} ГБ (${usedPercent}%)`
+          : "Загрузка данных...";
+        trafficBar.style.width = `${Math.min(100, usedPercent)}%`;
+        if (hasAccountData) {
+          applyStatusBadge(trafficStatusBadge, usedPercent < 90, `Загрузка: ${usedPercent}%`);
+        } else {
+          applyStatusBadge(trafficStatusBadge, false, "Нужна авторизация");
+        }
+      }
+
+      if (trafficDescription) {
+        if (hasAccountData) {
+          const remainingLine =
+            limit > 0
+              ? `↳ Остаток: ${leftText} ГБ из ${limitText} ГБ`
+              : "↳ Безлимитный пакет, остаток неограничен";
+
+          trafficDescription.textContent = `${subscriptionOverviewLines.join("\n")}\n${remainingLine}`;
+        } else {
+          trafficDescription.textContent =
+            "После входа здесь будет видно, где действует основной маршрут и какие есть резервы.";
+        }
       }
       trafficBar.parentElement?.setAttribute(
         "aria-label",
@@ -414,18 +728,20 @@
     }
 
     renderProfileList(hasAccountData);
+    renderActivityLog();
   }
 
   function completeApiAuth(data, successMessage) {
-    applyApiAccount(data.account, data.token, data.profiles);
+    applyApiAccount(data.account, data.token, data.profiles, data.events);
+    isAuthenticated = true;
     updateAccountIdentity();
     saveStoredAccount();
     setApiStatus("is-ready", "Кабинет готов: ключ и срок подписки обновлены.");
+    emitAccountEvent("auth_completed", "Вход выполнен", "Профиль и ключ доступны в кабинете.");
 
     if (authLabel) {
       authLabel.textContent = "Кабинет";
     }
-    isAuthenticated = true;
     closeAuth();
     openAccount(pendingAccountTab, true);
     pendingAccountTab = "overview";
@@ -464,6 +780,8 @@
       window.history.pushState(null, "", "#account");
     }
 
+    hasOpenedSessionLog = false;
+
     window.scrollTo({ top: 0, behavior: "smooth" });
     setTab(safeTab);
   }
@@ -471,8 +789,22 @@
   function closeAccount() {
     isAuthenticated = false;
     pendingAccountTab = "overview";
+    currentEvents = [];
+    currentProfiles = [];
     clearStoredAccount();
     apiSessionToken = "";
+    currentIdentity = {
+      ...currentIdentity,
+      email: "",
+      provider: "Войдите в кабинет",
+      providerTitle: "Войдите в кабинет",
+      username: "Аккаунт",
+      subscriptionUrl: "",
+      subscriptionToken: "",
+      expiresAt: "",
+      trafficLimitGb: 0,
+      trafficUsedGb: 0,
+    };
 
     if (accountPage) {
       accountPage.hidden = true;
@@ -484,9 +816,13 @@
       authLabel.textContent = "Войти";
     }
 
+    hasOpenedSessionLog = false;
+
     if (window.location.hash === "#account") {
       window.history.pushState(null, "", "#home");
     }
+
+    updateAccountIdentity();
 
     window.scrollTo({ top: 0, behavior: "smooth" });
     showToast("Вы вышли из личного кабинета");
@@ -513,6 +849,21 @@
 
     if (accountTitle) {
       accountTitle.textContent = titles[safeTab];
+    }
+
+    if (isAuthenticated) {
+      if (safeTab === "devices") {
+        emitAccountEvent("instruction_opened", "Открыта инструкция", "Пользователь перешел в раздел инструкции.");
+      } else if (safeTab === "payments") {
+        emitAccountEvent("tariff_selected", "Открыт раздел тарифов", "Пользователь открыл экраны продления.");
+      } else if (safeTab === "help") {
+        emitAccountEvent("support_started", "Открыта поддержка", "Пользователь открыл раздел поддержки.");
+      } else if (safeTab === "overview") {
+        if (!hasOpenedSessionLog) {
+          emitAccountEvent("connection_confirmed", "Открыт профиль", "Пользователь открыл обзор подписки.");
+          hasOpenedSessionLog = true;
+        }
+      }
     }
   }
 
@@ -648,16 +999,26 @@
     }
   });
 
-  copyButton?.addEventListener("click", async () => {
+  async function copySubscriptionLink() {
     try {
       await navigator.clipboard.writeText(getSafeSubscriptionLink());
+      await emitAccountEvent(
+        "subscription_link_copied",
+        "Ключ скопирован",
+        "Пользователь скопировал subscription link из веб-кабинета."
+      );
       showToast("Ссылка скопирована");
     } catch {
+      emitAccountEvent(
+        "subscription_link_copied",
+        "Попытка скопировать ссылку",
+        "Копирование в буфер прошло без API/брaузерного разрешения."
+      );
       showToast("Скопируйте ссылку вручную");
     }
-  });
+  }
 
-  openHappButton?.addEventListener("click", () => {
+  async function openSubscriptionInHapp() {
     if (!isAuthenticated) {
       openAuth("telegram");
       return;
@@ -667,13 +1028,23 @@
       const subscriptionUrl = getSafeSubscriptionLink();
       navigator.clipboard?.writeText(subscriptionUrl).catch(() => {});
       window.location.href = `happ://add/${encodeURIComponent(subscriptionUrl)}`;
+      await emitAccountEvent(
+        "happ_open_clicked",
+        "Запрос на добавление в Happ",
+        "Переход выполнен по кнопке добавить в Happ."
+      );
       showToast("Открываем Happ. Ссылка также скопирована");
     } catch {
+      emitAccountEvent(
+        "happ_open_clicked",
+        "Не удалось открыть Happ",
+        "Deep link был недоступен или ссылка еще не готова."
+      );
       showToast("Ключ еще не готов");
     }
-  });
+  }
 
-  rotateKeyButton?.addEventListener("click", async () => {
+  async function rotateSubscriptionKey() {
     if (!isAuthenticated) {
       openAuth("telegram");
       return;
@@ -685,18 +1056,33 @@
           method: "POST",
           body: JSON.stringify({}),
         });
-        applyApiAccount(data.account, apiSessionToken, data.profiles);
+        applyApiAccount(data.account, apiSessionToken, data.profiles, data.events);
         updateAccountIdentity();
         saveStoredAccount();
+        renderActivityLog();
         showToast("Ключ перевыпущен");
+        emitAccountEvent("key_rotated", "Ключ перевыпущен", "Пользователь создал новый ключ вручную.");
         return;
       } catch {
+        emitAccountEvent("key_rotated", "Ошибка перевыпуска", "Пользователь не смог перевыпустить ключ.");
         showToast("API недоступен, ключ не изменен");
         return;
       }
     }
 
     showToast("Войдите заново, чтобы перевыпустить ключ");
+  }
+
+  copyButtons.forEach((button) => {
+    button.addEventListener("click", copySubscriptionLink);
+  });
+
+  openHappButtons.forEach((button) => {
+    button.addEventListener("click", openSubscriptionInHapp);
+  });
+
+  rotateKeyButtons.forEach((button) => {
+    button.addEventListener("click", rotateSubscriptionKey);
   });
 
   planButtons.forEach((button) => {
@@ -704,8 +1090,15 @@
       const plan = allowedPlans.has(button.dataset.plan) ? button.dataset.plan : "тариф";
 
       openAccount("payments");
+      emitAccountEvent("payment_started", `Выбран тариф: ${plan}`, "Открыт выбор на оплату.");
       showToast(`Выбран тариф: ${plan}`);
     });
+  });
+
+  planUpgradeButton?.addEventListener("click", () => {
+    openAccount("payments", true);
+    emitAccountEvent("payment_started", "Открыта покупка трафика", "Пользователь нажал кнопку увеличения лимита.");
+    showToast("Выберите удобный тариф в разделе Тарифы");
   });
 
   window.addEventListener("hashchange", () => {

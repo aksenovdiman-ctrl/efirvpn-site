@@ -1125,6 +1125,18 @@ body.account-route main {
   font-size: 13px;
 }
 
+.status-badge[data-status="active"] {
+  border-color: rgba(53, 230, 176, 0.28);
+  background: rgba(53, 230, 176, 0.12);
+  color: var(--accent);
+}
+
+.status-badge[data-status="inactive"] {
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted);
+}
+
 .status-badge::before {
   width: 7px;
   height: 7px;
@@ -1223,6 +1235,42 @@ body.account-route main {
   margin-top: 8px;
 }
 
+.traffic-meter {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius);
+  background: rgba(53, 230, 176, 0.06);
+}
+
+.traffic-meter-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.2;
+}
+
+.traffic-meter-row span,
+.traffic-meter-row strong {
+  color: #a8c0b7;
+  font-weight: 800;
+}
+
+.traffic-meter-row strong {
+  justify-self: end;
+}
+
+.traffic-meter-row[data-traffic-spent] {
+  color: #7fa79a;
+  font-size: 13px;
+  font-weight: 800;
+}
+
 .traffic-value strong {
   font-size: 42px;
   line-height: 1;
@@ -1230,8 +1278,17 @@ body.account-route main {
 
 .traffic-value span,
 .traffic-note,
+.traffic-meta,
 .card-footnote {
   color: #85858e;
+}
+
+.traffic-description {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.45;
+  white-space: pre-line;
 }
 
 .traffic-bar {
@@ -1268,6 +1325,54 @@ body.account-route main {
   font-size: 14px;
   font-weight: 800;
   line-height: 1.35;
+}
+
+.activity-list {
+  display: grid;
+  gap: 8px;
+}
+
+.activity-item {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 58px;
+  padding: 12px 14px;
+  border: 1px solid rgba(53, 230, 176, 0.12);
+  border-radius: var(--radius);
+  background: #17171f;
+}
+
+.activity-item strong {
+  display: block;
+  margin-bottom: 3px;
+}
+
+.activity-item p {
+  margin: 0;
+  color: #a4a4ac;
+  font-size: 13px;
+}
+
+.activity-item small {
+  color: #6f7076;
+  font-size: 12px;
+}
+
+.activity-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(53, 230, 176, 0.12);
+}
+
+.activity-empty {
+  margin: 0;
+  color: #6f7076;
+  font-size: 14px;
 }
 
 .buy-traffic-button {

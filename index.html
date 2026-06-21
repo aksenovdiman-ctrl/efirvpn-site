@@ -69,7 +69,7 @@
           <span>быстрый импорт</span>
         </div>
         <div>
-          <strong>3 устройства</strong>
+          <strong>5 устройств</strong>
           <span>в базовом тарифе</span>
         </div>
         <div>
@@ -240,29 +240,29 @@
             <strong>EfirVPN</strong>
           </div>
           <button class="account-tab active" type="button" data-tab="overview">
-            <span aria-hidden="true">◇</span>Мой VPN
+            <span aria-hidden="true">🧩</span>Мой VPN
           </button>
           <button class="account-tab" type="button" data-tab="payments">
-            <span aria-hidden="true">▭</span>Тарифы
+            <span aria-hidden="true">💳</span>Тарифы
           </button>
           <button class="account-tab" type="button" data-tab="devices">
-            <span aria-hidden="true">▤</span>Инструкция
+            <span aria-hidden="true">📱</span>Подключить устройство
           </button>
           <button class="account-tab" type="button" data-tab="help">
-            <span aria-hidden="true">⌁</span>Поддержка
+            <span aria-hidden="true">🧭</span>Поддержка
           </button>
           <div class="account-user">
             <div>
               <strong data-account-user>Аккаунт</strong>
               <small data-account-provider>Войдите в кабинет</small>
             </div>
-            <button type="button" data-close-account aria-label="Выйти">↪</button>
+            <button type="button" data-close-account aria-label="Выйти">🚪</button>
           </div>
         </aside>
 
         <section class="account-main">
           <div class="account-head dashboard-email-card">
-            <span class="dash-icon">✓</span>
+            <span class="dash-icon">🟢</span>
             <div>
               <span data-account-provider-title>Войдите в кабинет</span>
               <h2 id="accountTitle" data-account-title>Мой VPN</h2>
@@ -276,24 +276,39 @@
           <div class="tab-panel active" data-panel="overview">
             <article class="dashboard-card vpn-active-card">
               <div class="dashboard-card-head">
-                <span class="dash-icon">✓</span>
+                <span class="dash-icon">🟢</span>
                 <div>
                   <h3>VPN активен</h3>
                   <p data-account-days-left>Войдите, чтобы увидеть срок</p>
                 </div>
-                <b class="status-badge">Онлайн</b>
+                <b class="status-badge" data-account-status-badge>Вход не выполнен</b>
               </div>
               <div class="vpn-metrics">
                 <div class="metric-card metric-green">
                   <span>Действует до</span>
                   <strong data-account-expires>—</strong>
-                  <button type="button" aria-label="Продлить подписку">+</button>
+                  <button type="button" aria-label="Открыть тарифы">↗</button>
                 </div>
                 <div class="metric-card metric-blue">
                   <span>Устройства</span>
-                  <strong>— <small>/ 5</small></strong>
-                  <button type="button" aria-label="Добавить устройство">+</button>
+                  <strong><span data-account-devices-used>—</span> <small data-account-device-limit>/ 5</small></strong>
+                  <button type="button" aria-label="Ограничение устройств">⚑</button>
                 </div>
+              </div>
+            </article>
+
+            <article class="dashboard-card quick-actions-card">
+              <div class="dashboard-card-head">
+                <span class="dash-icon">⚡</span>
+                <div>
+                  <h3>Быстрые действия</h3>
+                  <p>Откройте доступ в один клик: копия ключа, Happ и повторный выпуск.</p>
+                </div>
+              </div>
+              <div class="key-actions key-actions--compact" data-quick-actions>
+                <button class="happ-button" type="button" data-open-happ>Добавить в Happ</button>
+                <button class="ghost-button" type="button" data-copy-sub>Копировать ссылку</button>
+                <button class="ghost-button" type="button" data-rotate-key>Перевыпустить ключ</button>
               </div>
             </article>
 
@@ -302,31 +317,50 @@
                 <span class="dash-icon dash-purple">⌁</span>
                 <div>
                   <h3>Трафик подписки</h3>
-                  <p>Данные появятся после входа</p>
+                <p>Текущая загрузка и лимиты по подписке</p>
                 </div>
-                <b class="status-badge">Норма</b>
+                <b class="status-badge traffic-badge" data-traffic-status-badge>Сервис неактивен</b>
+              </div>
+              <div class="traffic-meter" aria-label="Использованный трафик">
+                <p class="traffic-meter-row">
+                  <span>Использовано</span>
+                  <strong data-traffic-used>—</strong>
+                  <span>ГБ</span>
+                </p>
+                <p class="traffic-meter-row">
+                  <span>Лимит</span>
+                  <strong data-traffic-limit>—</strong>
+                  <span>ГБ</span>
+                </p>
+                <p class="traffic-meter-row" data-traffic-spent>Загрузка данных...</p>
               </div>
               <div class="traffic-value">
                 <strong data-traffic-left>—</strong>
                 <span>ГБ</span>
               </div>
               <p class="traffic-note" data-traffic-note>Войдите, чтобы увидеть остаток трафика</p>
+              <p class="traffic-meta" data-traffic-meta>Выгрузка данных не начата</p>
+              <p class="traffic-description" data-traffic-description>
+                🟢 Основная линия: защищенный доступ
+                <br />↳ Резервные профили включаются автоматически при падениях сети
+                <br />↳ Один личный ключ для Happ, v2rayN, v2rayNG и Shadowrocket
+              </p>
               <div class="traffic-bar" aria-label="Трафик появится после входа">
                 <span data-traffic-bar></span>
               </div>
               <div class="subscription-description" aria-label="Описание подписки">
-                <p>🟢 Основная линия: защищенный доступ</p>
-                <p>↳ Резервные профили для нестабильной сети</p>
-                <p>↳ Один ключ для Happ, v2rayN, v2rayNG и Shadowrocket</p>
+                <p>Подключения:</p>
+                <p>• Telegram и Email в одном кабинете</p>
+                <p>• Основная линия Helsinki и резервные профили</p>
+                <p>• Один ключ для всех ваших устройств</p>
               </div>
-              <button class="buy-traffic-button" type="button">
-                <span>□</span>
-                Купить пакет
+              <button class="buy-traffic-button" type="button" data-plan-upgrade>
+                <span>◈</span>
+                Увеличить лимит
                 <b>+50 ГБ · 100 ₽</b>
               </button>
               <p class="card-footnote">
-                Лимит тарифа обновляется 1 числа каждого месяца.
-                Неиспользованный остаток купленного пакета переносится в следующий месяц.
+                Пакет добавляет лимит к текущему тарифу и не влияет на действующий срок.
               </p>
             </article>
 
@@ -358,7 +392,7 @@
                 <span class="dash-icon dash-purple">▦</span>
                 <div>
                   <h3>Профили в Happ</h3>
-                  <p>Основная линия и резервные маршруты в одной подписке.</p>
+                  <p>Helsinki и резервные линии в одной подписке.</p>
                 </div>
               </div>
               <div class="server-list" data-profile-list>
@@ -380,6 +414,18 @@
                 <p>Когда друг оплатит: +20 дней вам и +10 дней другу.</p>
               </div>
               <button type="button">Открыть⌄</button>
+            </article>
+
+            <article class="dashboard-card">
+              <div class="dashboard-card-head">
+                <span class="dash-icon">🧾</span>
+                <div>
+                  <h3>Журнал активности</h3>
+                  <p>Что происходило с вашим доступом в последний час.</p>
+                </div>
+              </div>
+              <div class="activity-list" data-activity-list></div>
+              <p class="activity-empty" data-activity-empty>Войдите, чтобы увидеть историю.</p>
             </article>
           </div>
 
