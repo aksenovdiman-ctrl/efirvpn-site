@@ -96,6 +96,7 @@
   };
   let currentIdentity = {
     email: "",
+    providerKey: "",
     provider: "Войдите в кабинет",
     providerTitle: "Войдите в кабинет",
     username: "Аккаунт",
@@ -245,6 +246,7 @@
     currentIdentity = {
       ...currentIdentity,
       email: "",
+      providerKey: "",
       provider: "Войдите в кабинет",
       providerTitle: "Войдите в кабинет",
       username: "Аккаунт",
@@ -316,6 +318,7 @@
     currentIdentity = {
       ...currentIdentity,
       email: account.email || currentIdentity.email,
+      providerKey: account.provider || currentIdentity.providerKey,
       provider: account.provider === "email" ? "Email подключен" : "Telegram подключен",
       providerTitle: account.provider === "email" ? "Email привязан" : "Telegram подключен",
       username: account.username || account.email || currentIdentity.username,
@@ -882,6 +885,7 @@
     currentIdentity = {
       ...currentIdentity,
       email: "",
+      providerKey: "",
       provider: "Войдите в кабинет",
       providerTitle: "Войдите в кабинет",
       username: "Аккаунт",
@@ -1046,7 +1050,7 @@
         return;
       }
 
-      if (currentIdentity.provider === "Telegram подключен") {
+      if (currentIdentity.providerKey === "telegram") {
         showToast("Telegram уже подключен");
         return;
       }
@@ -1102,7 +1106,7 @@
         return;
       }
 
-      if (currentIdentity.provider === "Email подключен") {
+      if (currentIdentity.providerKey === "email") {
         showToast("Email уже подключен");
         return;
       }
