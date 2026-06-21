@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/backend/:path*",
-      "destination": "http://api.efirvpn.ru/:path*"
+      "destination": "https://panel.efirvpn.ru/efir-api/:path*"
     }
   ]
 }
