@@ -1722,8 +1722,10 @@
     if (!isAuthMethodAvailable(safeMethod)) {
       setApiStatus(
         "is-warning",
-        !authCapabilities.telegram && !authCapabilities.email
-          ? "Кабинет обновляется: сайт уже готов, но API панели еще ждёт деплой."
+        accountApiReady && !authCapabilities.telegram && !authCapabilities.email
+          ? "Кабинет API работает, но способы входа еще не подключены."
+          : !authCapabilities.telegram && !authCapabilities.email
+            ? "Кабинет обновляется: сайт уже готов, но API панели еще ждёт деплой."
           : `${safeMethod === "email" ? "Email" : "Telegram"} вход еще не подключен.`
       );
       return;
