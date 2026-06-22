@@ -3,6 +3,7 @@ set -euo pipefail
 
 PANEL_IP="${PANEL_IP:-72.56.11.76}"
 LISTEN_PORT="${LISTEN_PORT:-18080}"
+TELEGRAM_UPSTREAM_HOST="${TELEGRAM_UPSTREAM_HOST:-149.154.166.110}"
 PROXY_SCRIPT="${PROXY_SCRIPT:-/opt/efir-telegram-proxy.py}"
 SERVICE_FILE="${SERVICE_FILE:-/etc/systemd/system/efir-telegram-proxy.service}"
 
@@ -15,6 +16,7 @@ LISTEN_PORT = ${LISTEN_PORT}
 ALLOWED_CLIENTS = {"${PANEL_IP}", "127.0.0.1"}
 ALLOWED_HOST = "api.telegram.org"
 ALLOWED_PORT = 443
+UPSTREAM_HOST = "${TELEGRAM_UPSTREAM_HOST}"
 
 async def pipe(reader, writer):
     try:
@@ -55,7 +57,7 @@ async def handle(client_reader, client_writer):
             if line in (b"\\r\\n", b"\\n", b""):
                 break
 
-        remote_reader, remote_writer = await asyncio.open_connection(host, port)
+        remote_reader, remote_writer = await asyncio.open_connection(UPSTREAM_HOST, port)
         client_writer.write(b"HTTP/1.1 200 Connection Established\\r\\n\\r\\n")
         await client_writer.drain()
         await asyncio.gather(
