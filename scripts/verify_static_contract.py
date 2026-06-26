@@ -70,7 +70,7 @@ def main() -> int:
         require("index", index, marker)
 
     for marker in (
-        'const apiBase = "https://panel.efirvpn.ru/efir-api"',
+        'const apiBase = "https://api.efirvpn.ru"',
         'const subscriptionBase = "https://panel.efirvpn.ru/api/sub"',
         "hasCurrentAccountApi",
         "authReadinessItems",

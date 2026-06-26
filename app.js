@@ -102,7 +102,7 @@
   const allowedAuthMethods = new Set(["telegram", "email"]);
   const allowedActivityGroups = new Set(["all", "account", "auth", "connection", "payment", "support"]);
   const allowedSubscriptionHost = "panel.efirvpn.ru";
-  const apiBase = "https://panel.efirvpn.ru/efir-api";
+  const apiBase = "https://api.efirvpn.ru";
   const subscriptionBase = "https://panel.efirvpn.ru/api/sub";
   const storageKey = "efirvpn.account.v1";
   const sessionStorageKey = "efirvpn.session.v1";
